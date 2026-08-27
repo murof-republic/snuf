@@ -1,6 +1,6 @@
 const { AIProjectClient } = require('@azure/ai-projects');
 const { DefaultAzureCredential } = require('@azure/identity');
-const config = require('../config.json');
+const config = require('../config');
 
 const credential = new DefaultAzureCredential();
 
