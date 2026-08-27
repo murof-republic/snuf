@@ -34,7 +34,10 @@ async function chat(userId, message) {
 					name: config.foundry.agentName,
 					type: 'agent_reference'
 				}
-			}
+			},
+            headers: {
+			    'x-memory-user-id': userId
+		    }
 		}
 	);
 
