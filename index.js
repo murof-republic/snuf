@@ -4,6 +4,7 @@ const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits, MessageFlags } = require('discord.js');
 const { token } = require('./config.json');
 const foundry = require('./services/foundry');
+const database = require('./services/database');
 
 // Create a new client instance
 const client = new Client({
@@ -48,5 +49,6 @@ for (const file of eventFiles) {
 	}
 }
 
-// Log in to Discord with your client's token
-client.login(token);
+database.connect().then(() => {
+	client.login(token);
+});
