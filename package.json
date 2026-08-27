@@ -23,6 +23,7 @@
     "@azure/identity": "^4.13.2",
     "axios": "^1.20.0",
     "discord.js": "^14.27.0",
+    "dotenv": "^17.4.2",
     "firebase-admin": "^14.3.0"
   }
 }

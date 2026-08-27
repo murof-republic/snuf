@@ -1,11 +1,10 @@
 const { AIProjectClient } = require('@azure/ai-projects');
 const { DefaultAzureCredential } = require('@azure/identity');
-const config = require('../config');
 
 const credential = new DefaultAzureCredential();
 
 const project = new AIProjectClient(
-	config.foundry.projectEndpoint,
+	process.env.FOUNDRY_PROJECT_ENDPOINT,
 	credential
 );
 
@@ -31,13 +30,13 @@ async function chat(userId, message) {
 		{
 			body: {
 				agent_reference: {
-					name: config.foundry.agentName,
+					name: process.env.FOUNDRY_AGENT_NAME,
 					type: 'agent_reference'
 				}
 			},
-            headers: {
-			    'x-memory-user-id': userId
-		    }
+			headers: {
+				'x-memory-user-id': userId
+			}
 		}
 	);
 
