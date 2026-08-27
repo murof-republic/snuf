@@ -205,8 +205,8 @@ function startMinecraftDashboard(client) {
 	updateDashboard(client);
 
 	setInterval(() => {
-		updateDashboard(client);
-	}, 30 * 1000);
+        updateDashboard(client);
+    }, 5 * 60 * 1000);
 }
 
 module.exports = {
