@@ -26,23 +26,18 @@ async function chat(userId, message) {
         conversations.set(userId, conversationId);
     }
 
-    const response = await openai.responses.create(
-        {
-            conversation: conversationId,
-            input: message,
-        },
-        {
-            body: {
-                agent_reference: {
-                    name: process.env.FOUNDRY_AGENT_NAME,
-                    type: 'agent_reference'
-                }
-            },
-            headers: {
-                'x-memory-user-id': userId
-            }
+    const response = await openai.responses.create({
+        conversation: conversationId,
+        input: message,
+        agent_reference: {
+            name: process.env.FOUNDRY_AGENT_NAME,
+            type: 'agent_reference'
         }
-    );
+    }, {
+        headers: {
+            'x-memory-user-id': userId
+        }
+    });
 
     return response.output_text;
 }
