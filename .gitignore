@@ -144,4 +144,5 @@ vite.config.ts.timestamp-*
 
 .idea/
 .vscode/
+test/
 config.json
