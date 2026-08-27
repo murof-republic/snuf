@@ -16,6 +16,7 @@ const database = require('./services/database');
 const client = new Client({
 	intents: [
 		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.MessageContent,
 	],
