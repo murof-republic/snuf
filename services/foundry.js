@@ -1,7 +1,9 @@
 const { AIProjectClient } = require('@azure/ai-projects');
 const { DefaultAzureCredential } = require('@azure/identity');
 
-const credential = new DefaultAzureCredential();
+const credential = new DefaultAzureCredential({
+    managedIdentityClientId: process.env.AZURE_CLIENT_ID
+});
 
 const project = new AIProjectClient(
 	process.env.FOUNDRY_PROJECT_ENDPOINT,
