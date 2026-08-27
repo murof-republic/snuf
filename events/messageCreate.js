@@ -7,11 +7,26 @@ module.exports = {
     async execute(message) {
         if (message.author.bot) return;
 
-        const match = message.content.match(/\bsnuf/i);
-        if (!match) return;
+        const match = message.content.match(/\bsnuf\b/i); 
+
+        const mentioned = message.mentions.has(message.client.user); 
+
+        let reply = false;
+
+        if(message.reference?.messageId) {
+            const repliedMessage = await message.channel.messages.fetch(
+                message.reference.messageId
+            );
+
+            reply = repliedMessage.author.id === message.client.user.id;
+        }
+
+        if (!match && !mentioned && !reply) return;
 
         const content = message.content
-            .replace(/\bsnuf/i, '')
+            .replace(/\bsnuf\b/gi, '')
+            .replace(`<@${message.client.user.id}>`, '')
+	        .replace(`<@!${message.client.user.id}>`, '')
             .trim();
 
         if (!content) return;
@@ -25,7 +40,7 @@ module.exports = {
 
             await message.reply(response);
         } catch (error) {
-            console.error("Erro, o Foundry colapsou!")
+            console.error("Erro, o Foundry colapsou!", error);
         }    
     }
 };
