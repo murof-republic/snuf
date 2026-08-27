@@ -18,6 +18,10 @@ module.exports = {
             process.env.FOUNDRY_PROJECT_ENDPOINT ||
             localConfig.foundry?.projectEndpoint,
 
+        apiKey:
+            process.env.FOUNDRY_API_KEY ||
+            localConfig.foundry?.apiKey,
+
         agentName:
             process.env.FOUNDRY_AGENT_NAME ||
             localConfig.foundry?.agentName
