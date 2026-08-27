@@ -69,7 +69,9 @@ module.exports = {
 			if (!role) {
 				role = await guild.roles.create({
 					name: color.name,
-					color: color.hex,
+					colors: {
+						primaryColor: color.hex
+					},
 					reason: 'Cargo de cor do usuário'
 				});
 			}
