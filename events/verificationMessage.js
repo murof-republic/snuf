@@ -3,7 +3,7 @@ const { Events } = require('discord.js');
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const VERIFY_ROLE_ID = process.env.VERIFY_ROLE_ID;
 
-const NEEDED_MESSAGES = 20;
+const NEEDED_MESSAGES = 15;
 const TTL_MS = 48 * 60 * 60 * 1000;
 
 const state = new Map();
@@ -21,6 +21,8 @@ module.exports = {
 
         if (!member) return;
 
+        if (member.roles.cache.has(VERIFY_ROLE_ID)) return;
+
         const role = message.guild.roles.cache.get(VERIFY_ROLE_ID);
 
         if (!role) {
@@ -29,8 +31,6 @@ module.exports = {
             );
             return;
         }
-
-        if (member.roles.cache.has(VERIFY_ROLE_ID)) return;
 
         const now = Date.now();
 

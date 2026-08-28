@@ -23,6 +23,13 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
+        if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+            return interaction.reply({
+                content: 'Você precisa ser administrador para usar este comando.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         const channel = interaction.options.getChannel('canal', true);
         const message = interaction.options.getString('mensagem', true);
 

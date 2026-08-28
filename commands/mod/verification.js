@@ -7,9 +7,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('verificar')
         .setDescription('Verifica um user manualmente.')
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.Administrator.toString()
-        )
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addUserOption(option =>
             option
                 .setName('user')
@@ -18,6 +16,13 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+            return interaction.reply({
+                content: 'Você precisa ser administrador para usar este comando.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         if (interaction.guildId !== GUILD_ID) {
             return interaction.reply({
                 content: 'Comando indisponível neste servidor.',
@@ -51,14 +56,20 @@ module.exports = {
         }
 
         try {
-            await membro.roles.add(role, 'Verificação manual');
+            await membro.roles.add(
+                role,
+                'Verificação manual'
+            );
 
             await interaction.reply({
                 content: `${membro} foi verificado.`,
                 flags: MessageFlags.Ephemeral
             });
         } catch (error) {
-            console.error('Erro ao verificar membro:', error);
+            console.error(
+                'Erro ao verificar membro:',
+                error
+            );
 
             await interaction.reply({
                 content: 'Não consegui verificar esse membro. Verifique as permissões do bot e a posição do cargo.',

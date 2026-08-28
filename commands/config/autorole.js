@@ -16,6 +16,13 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
+        if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+            return interaction.reply({
+                content: 'Você precisa ser administrador para usar este comando.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         const role = interaction.options.getRole('cargo', true);
 
         if (role.managed) {
