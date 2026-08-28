@@ -1,8 +1,4 @@
-const {
-    SlashCommandBuilder,
-    PermissionFlagsBits,
-    MessageFlags
-} = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const VERIFY_ROLE_ID = process.env.VERIFY_ROLE_ID;

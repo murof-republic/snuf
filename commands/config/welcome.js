@@ -1,15 +1,8 @@
-const {
-    SlashCommandBuilder,
-    PermissionFlagsBits,
-    ChannelType,
-    MessageFlags,
-} = require('discord.js');
-
+const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageFlags } = require('discord.js');
 const guilds = require('../../services/guilds');
 
 module.exports = {
     cooldown: 5,
-
     data: new SlashCommandBuilder()
         .setName('welcome')
         .setDescription('Configura o sistema de boas-vindas.')
