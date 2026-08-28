@@ -20,7 +20,7 @@ initializeApp({
 const db = getFirestore();
 
 async function connect() {
-	await db.collection('test').doc('connection').set({
+	await db.collection('login').doc('connection').set({
 		connected: true,
 		timestamp: new Date(),
 	});
