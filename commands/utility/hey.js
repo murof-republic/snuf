@@ -4,7 +4,7 @@ const { chat } = require('../../services/foundry');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('hey')
-        .setDescription('Converse com o snuf.')
+        .setDescription('Converse com o Snuf.')
         .addStringOption(option =>
             option
                 .setName('mensagem')
@@ -13,6 +13,13 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        if (interaction.guildId !== process.env.DISCORD_GUILD_ID) {
+            return interaction.reply({
+                content: 'Esse comando não está disponível neste servidor.',
+                ephemeral: true
+            });
+        }
+
         const mensagem = interaction.options.getString('mensagem', true);
 
         await interaction.deferReply();

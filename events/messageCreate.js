@@ -7,13 +7,18 @@ module.exports = {
     async execute(message) {
         if (message.author.bot) return;
 
-        const match = message.content.match(/\bsnuf\b/i); 
+        if (
+            !message.guild ||
+            message.guild.id !== process.env.DISCORD_GUILD_ID
+        ) return;
 
-        const mentioned = message.mentions.has(message.client.user); 
+        const match = message.content.match(/\bsnuf\b/i);
+
+        const mentioned = message.mentions.has(message.client.user);
 
         let reply = false;
 
-        if(message.reference?.messageId) {
+        if (message.reference?.messageId) {
             const repliedMessage = await message.channel.messages.fetch(
                 message.reference.messageId
             );
@@ -26,13 +31,14 @@ module.exports = {
         const content = message.content
             .replace(/\bsnuf\b/gi, '')
             .replace(`<@${message.client.user.id}>`, '')
-	        .replace(`<@!${message.client.user.id}>`, '')
+            .replace(`<@!${message.client.user.id}>`, '')
             .trim();
 
         if (!content) return;
 
         try {
             await message.channel.sendTyping();
+
             const response = await foundry.chat(
                 message.author.id,
                 content
@@ -40,7 +46,7 @@ module.exports = {
 
             await message.reply(response);
         } catch (error) {
-            console.error("Erro, o Foundry colapsou!", error);
-        }    
+            console.error(error);
+        }
     }
 };
