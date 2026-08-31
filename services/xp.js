@@ -1,4 +1,4 @@
-const { getMembersCollection } = require('../services/firebase');
+const { getMembersCollection } = require('./firebase');
 
 // Configurações
 

@@ -1,5 +1,6 @@
 const { Events, ActivityType } = require('discord.js');
 const { startMinecraftDashboard } = require('../services/minecraft'); // Inicia o dashboard do minecraft
+const { startVoiceXP } = require('../services/xp');
 
 const texts = [
 	'Quer trocar a cor do seu nick? Experimente /cor...',
@@ -46,5 +47,6 @@ module.exports = {
 		setInterval(updatePresence, 60 * 60 * 1000);
 
 		startMinecraftDashboard(client);
+		startVoiceXP(client);
 	}
 };
