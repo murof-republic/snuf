@@ -1,9 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { getMembersCollection } = require('../../services/firebase');
-const { getCachedXP } = require('../../events/xp');
+const { getCachedXP, XP_PER_LEVEL } = require('../../services/xp');
 const colors = require('../../services/colors');
-
-const XP_PER_LEVEL = 1000;
 
 function formatCurrency(value) {
 	return Math.trunc(value).toLocaleString('pt-BR');
@@ -45,18 +43,13 @@ module.exports = {
 				);
 			}
 
-			let credits = 0;
-			let globalXP = 0;
-			let xp = 0;
-
-			const cachedXP = getCachedXP(
-				target.id,
-				interaction.guild.id
-			);
-
 			const members = getMembersCollection();
 			const userRef = members.doc(target.id);
 			const userSnapshot = await userRef.get();
+
+			let credits = 0;
+			let globalXP = 0;
+			let xp = 0;
 
 			if (userSnapshot.exists) {
 				const data = userSnapshot.data();
@@ -66,21 +59,24 @@ module.exports = {
 						? data.credits
 						: 0;
 
-				if (!cachedXP) {
-					globalXP =
-						typeof data.xpGlobal === 'number'
-							? data.xpGlobal
-							: 0;
+				globalXP =
+					typeof data.xpGlobal === 'number'
+						? data.xpGlobal
+						: 0;
 
-					const serverData =
-						data.servers?.[interaction.guild.id] || {};
+				const serverData =
+					data.servers?.[interaction.guild.id] || {};
 
-					xp =
-						typeof serverData.xp === 'number'
-							? serverData.xp
-							: 0;
-				}
+				xp =
+					typeof serverData.xp === 'number'
+						? serverData.xp
+						: 0;
 			}
+
+			const cachedXP = getCachedXP(
+				target.id,
+				interaction.guild.id
+			);
 
 			if (cachedXP) {
 				globalXP = cachedXP.globalXP;
