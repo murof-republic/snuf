@@ -1,25 +1,36 @@
 const { getMembersCollection } = require('../services/firebase');
 
-// XP por mensagem
+// Configurações
+
 const MESSAGE_XP_MIN = 5;
 const MESSAGE_XP_MAX = 15;
+
 const MESSAGE_COOLDOWN = 10 * 1000;
 
-// XP por voz
 const VOICE_XP_MIN = 5;
 const VOICE_XP_MAX = 10;
+
 const VOICE_INTERVAL = 60 * 1000;
 
-// Salvamento
 const SAVE_MESSAGE_COUNT = 10;
 const SAVE_INTERVAL = 5 * 60 * 1000;
 
 const XP_PER_LEVEL = 1000;
 
+
+// Cache
+
 const users = new Map();
+
+
+// Funções
 
 function randomXP(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function getLevel(xp) {
+	return Math.floor(xp / XP_PER_LEVEL);
 }
 
 function getUserCache(userId, guildId) {
@@ -47,17 +58,35 @@ function getUserCache(userId, guildId) {
 	return user;
 }
 
-function addXP(userId, guildId, amount) {
+
+// XP
+
+function addXP(userId, guildId, amount, channel) {
 	const user = getUserCache(userId, guildId);
 	const guild = user.guilds.get(guildId);
+
+	const oldLevel = getLevel(guild.xp);
 
 	user.globalXP += amount;
 	guild.xp += amount;
 
+	const newLevel = getLevel(guild.xp);
+
 	user.messageCount++;
+
+	if (newLevel > oldLevel && channel) {
+		channel.send(
+			`Parabéns <@${userId}>, você subiu para o nível ${newLevel}! <a:hackerbongocat:1473553251109568583>`
+		).catch(error => {
+			console.error('Erro ao enviar mensagem de level up:', error);
+		});
+	}
 
 	return amount;
 }
+
+
+// XP por mensagem
 
 async function handleMessage(message) {
 	if (!message.guild) return;
@@ -67,6 +96,7 @@ async function handleMessage(message) {
 	const guildId = message.guild.id;
 
 	const user = getUserCache(userId, guildId);
+
 	const now = Date.now();
 
 	if (now - user.lastMessageXP < MESSAGE_COOLDOWN) {
@@ -80,7 +110,12 @@ async function handleMessage(message) {
 		MESSAGE_XP_MAX
 	);
 
-	addXP(userId, guildId, amount);
+	addXP(
+		userId,
+		guildId,
+		amount,
+		message.channel
+	);
 
 	if (
 		user.messageCount >= SAVE_MESSAGE_COUNT ||
@@ -91,6 +126,9 @@ async function handleMessage(message) {
 
 	return amount;
 }
+
+
+// Firebase
 
 async function saveUser(userId) {
 	const user = users.get(userId);
@@ -124,6 +162,9 @@ async function saveUser(userId) {
 	}
 }
 
+
+// Voz
+
 async function handleVoiceStateUpdate(oldState, newState) {
 	const member = newState.member || oldState.member;
 
@@ -139,7 +180,6 @@ async function handleVoiceStateUpdate(oldState, newState) {
 
 	const user = getUserCache(userId, guildId);
 
-	// Entrou
 	if (!oldState.channelId && newState.channelId) {
 		user.voice = {
 			guildId,
@@ -150,7 +190,6 @@ async function handleVoiceStateUpdate(oldState, newState) {
 		return;
 	}
 
-	// Mudou de canal
 	if (
 		oldState.channelId &&
 		newState.channelId &&
@@ -165,13 +204,15 @@ async function handleVoiceStateUpdate(oldState, newState) {
 		return;
 	}
 
-	// Saiu
 	if (oldState.channelId && !newState.channelId) {
 		user.voice = null;
 
 		await saveUser(userId);
 	}
 }
+
+
+// XP de voz
 
 async function processVoiceXP(client) {
 	for (const [userId, user] of users) {
@@ -193,7 +234,6 @@ async function processVoiceXP(client) {
 			member => !member.user.bot
 		);
 
-		// Sozinho não ganha
 		if (humans.size < 2) continue;
 
 		const now = Date.now();
@@ -212,7 +252,8 @@ async function processVoiceXP(client) {
 		addXP(
 			userId,
 			user.voice.guildId,
-			amount
+			amount,
+			channel
 		);
 
 		if (
@@ -223,6 +264,9 @@ async function processVoiceXP(client) {
 		}
 	}
 }
+
+
+// Iniciar voz
 
 function startVoiceXP(client) {
 	setInterval(() => {
@@ -235,11 +279,15 @@ function startVoiceXP(client) {
 	}, 10 * 1000);
 }
 
+
+// Salvar tudo
+
 async function saveAll() {
 	for (const userId of users.keys()) {
 		await saveUser(userId);
 	}
 }
+
 
 module.exports = {
 	handleMessage,
