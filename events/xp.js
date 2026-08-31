@@ -78,7 +78,10 @@ function addXP(userId, guildId, amount, channel) {
 		channel.send(
 			`Parabéns <@${userId}>, você subiu para o nível ${newLevel}! <a:hackerbongocat:1473553251109568583>`
 		).catch(error => {
-			console.error('Erro ao enviar mensagem de level up:', error);
+			console.error(
+				'Erro ao enviar mensagem de level up:',
+				error
+			);
 		});
 	}
 
@@ -289,10 +292,29 @@ async function saveAll() {
 }
 
 
+// XP em cache
+
+function getCachedXP(userId, guildId) {
+	const user = users.get(userId);
+
+	if (!user) return null;
+
+	const guild = user.guilds.get(guildId);
+
+	if (!guild) return null;
+
+	return {
+		globalXP: user.globalXP,
+		xp: guild.xp
+	};
+}
+
+
 module.exports = {
 	handleMessage,
 	handleVoiceStateUpdate,
 	startVoiceXP,
 	saveAll,
+	getCachedXP,
 	XP_PER_LEVEL
 };
