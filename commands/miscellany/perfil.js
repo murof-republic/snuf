@@ -50,8 +50,8 @@ module.exports = {
 			const userSnapshot = await userRef.get();
 
 			let credits = 0;
+			let globalXP = 0;
 			let xp = 0;
-			let level = 0;
 
 			if (userSnapshot.exists) {
 				const data = userSnapshot.data();
@@ -61,6 +61,11 @@ module.exports = {
 						? data.credits
 						: 0;
 
+				globalXP =
+					typeof data.xpGlobal === 'number'
+						? data.xpGlobal
+						: 0;
+
 				const serverData =
 					data.servers?.[interaction.guild.id] || {};
 
@@ -68,12 +73,9 @@ module.exports = {
 					typeof serverData.xp === 'number'
 						? serverData.xp
 						: 0;
-
-				level =
-					typeof serverData.level === 'number'
-						? serverData.level
-						: Math.floor(xp / XP_PER_LEVEL);
 			}
+
+			const level = Math.floor(xp / XP_PER_LEVEL);
 
 			const colorNames = new Set(
 				colors.map(color => color.name.toLowerCase())
@@ -118,6 +120,11 @@ module.exports = {
 					{
 						name: 'XP & Nível',
 						value: `XP: ${formatCurrency(xp)} | Nível: ${level}`,
+						inline: true
+					},
+					{
+						name: 'XP Global',
+						value: formatCurrency(globalXP),
 						inline: true
 					},
 					{
