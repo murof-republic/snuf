@@ -133,7 +133,7 @@ module.exports = {
 					{
 						name: 'XP & Level',
 						value: `XP: ${formatCurrency(xp)} | Level: ${level}`,
-						inline: false
+						inline: true
 					},
 					{
 						name: 'XP Global',

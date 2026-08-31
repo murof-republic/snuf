@@ -15,3 +15,5 @@ Tenha ferramentas para **administração, interação e entretenimento**, tudo e
 O projeto está em desenvolvimento constante, com novos recursos e melhorias sendo adicionados regularmente.
 
 > Simples de configurar, divertido de usar e feito para comunidades do Discord.
+
+[Adicione ele no seu servidor!](https://github.com/murof-republic/snuf)
