@@ -73,15 +73,29 @@ module.exports = {
             console.error(error);
 
             if (interaction.replied || interaction.deferred) {
-                await interaction.followUp({
-                    content: 'Houve um erro ao executar este comando!',
-                    flags: MessageFlags.Ephemeral,
-                });
+                try {
+                    await interaction.followUp({
+                        content: 'Houve um erro ao executar este comando!',
+                        flags: MessageFlags.Ephemeral,
+                    });
+                } catch (followUpError) {
+                    console.error(
+                        'Erro ao enviar mensagem de erro:',
+                        followUpError
+                    );
+                }
             } else {
-                await interaction.reply({
-                    content: 'Houve um erro ao executar este comando!',
-                    flags: MessageFlags.Ephemeral,
-                });
+                try {
+                    await interaction.reply({
+                        content: 'Houve um erro ao executar este comando!',
+                        flags: MessageFlags.Ephemeral,
+                    });
+                } catch (replyError) {
+                    console.error(
+                        'Erro ao enviar mensagem de erro:',
+                        replyError
+                    );
+                }
             }
         }
     },

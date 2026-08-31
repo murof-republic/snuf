@@ -14,6 +14,8 @@ module.exports = {
 		),
 
 	async autocomplete(interaction) {
+		if (interaction.responded) return;
+
 		const input = interaction.options.getString('cor', true).toLowerCase();
 
 		const results = colors
@@ -22,12 +24,18 @@ module.exports = {
 			)
 			.slice(0, 25);
 
-		await interaction.respond(
-			results.map(color => ({
-				name: color.name,
-				value: color.name
-			}))
-		);
+		try {
+			await interaction.respond(
+				results.map(color => ({
+					name: color.name,
+					value: color.name
+				}))
+			);
+		} catch (error) {
+			if (error.code !== 40060) {
+				console.error('Erro no autocomplete:', error);
+			}
+		}
 	},
 
 	async execute(interaction) {
@@ -86,7 +94,7 @@ module.exports = {
 		} catch (error) {
 			console.error('Erro ao alterar cor:', error);
 
-			if (!interaction.replied) {
+			if (!interaction.replied && !interaction.deferred) {
 				await interaction.reply({
 					content: 'Não consegui alterar sua cor. Verifique as permissões do bot.',
 					flags: MessageFlags.Ephemeral

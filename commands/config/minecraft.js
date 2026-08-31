@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
-const { getGuildsCollection } = require('../../services/database');
+const { getGuildsCollection } = require('../../services/firebase');
 
 module.exports = {
     data: new SlashCommandBuilder()

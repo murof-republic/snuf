@@ -1,4 +1,4 @@
-const { getGuildsCollection } = require('./database');
+const { getGuildsCollection } = require('./firebase');
 
 const guilds = getGuildsCollection();
 

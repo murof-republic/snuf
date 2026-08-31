@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits, MessageFlags} = require('discord.js');
 const foundry = require('./services/foundry');
-const database = require('./services/database');
+const database = require('./services/firebase');
 
 const client = new Client({
 	intents: [

@@ -1,5 +1,5 @@
 const { Events, ActivityType } = require('discord.js');
-const { startMinecraftDashboard } = require('../services/minecraft');
+const { startMinecraftDashboard } = require('../services/minecraft'); // Inicia o dashboard do minecraft
 
 const texts = [
 	'Quer trocar a cor do seu nick? Experimente /cor...',

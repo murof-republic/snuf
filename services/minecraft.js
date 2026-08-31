@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { getGuildsCollection } = require('./database');
+const { getGuildsCollection } = require('./firebase');
 
 const startedAt = new Map();
 const lastOnline = new Map();
