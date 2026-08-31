@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { getMembersCollection } = require('../../services/firebase');
-const { getCachedXP, XP_PER_LEVEL } = require('../../services/xp');
+const { getCachedXP, XP_PER_LEVEL } = require('../../events/xp');
 const colors = require('../../services/colors');
 
 function formatCurrency(value) {
