@@ -5,8 +5,6 @@ const { getMembersCollection } = require('../services/firebase');
 const MESSAGE_XP_MIN = 5;
 const MESSAGE_XP_MAX = 15;
 
-const MESSAGE_COOLDOWN = 10 * 1000;
-
 const VOICE_XP_MIN = 5;
 const VOICE_XP_MAX = 10;
 
@@ -33,7 +31,10 @@ function getLevel(xp) {
 	return Math.floor(xp / XP_PER_LEVEL);
 }
 
-function getUserCache(userId, guildId) {
+
+// Carregar usuário
+
+async function getUserCache(userId, guildId) {
 	let user = users.get(userId);
 
 	if (!user) {
@@ -41,9 +42,9 @@ function getUserCache(userId, guildId) {
 			globalXP: 0,
 			guilds: new Map(),
 			messageCount: 0,
-			lastMessageXP: 0,
 			lastSave: Date.now(),
-			voice: null
+			voice: null,
+			loaded: false
 		};
 
 		users.set(userId, user);
@@ -55,6 +56,43 @@ function getUserCache(userId, guildId) {
 		});
 	}
 
+	if (!user.loaded) {
+		try {
+			const members = getMembersCollection();
+			const snapshot = await members.doc(userId).get();
+
+			if (snapshot.exists) {
+				const data = snapshot.data();
+
+				user.globalXP =
+					typeof data.xpGlobal === 'number'
+						? data.xpGlobal
+						: 0;
+
+				for (const [serverId, serverData] of Object.entries(
+					data.servers || {}
+				)) {
+					user.guilds.set(serverId, {
+						xp:
+							typeof serverData?.xp === 'number'
+								? serverData.xp
+								: 0
+					});
+				}
+			}
+
+			user.loaded = true;
+
+		} catch (error) {
+			console.error(
+				`Erro ao carregar XP do usuário ${userId}:`,
+				error
+			);
+
+			return null;
+		}
+	}
+
 	return user;
 }
 
@@ -62,8 +100,13 @@ function getUserCache(userId, guildId) {
 // XP
 
 function addXP(userId, guildId, amount, channel) {
-	const user = getUserCache(userId, guildId);
+	const user = users.get(userId);
+
+	if (!user) return 0;
+
 	const guild = user.guilds.get(guildId);
+
+	if (!guild) return 0;
 
 	const oldLevel = getLevel(guild.xp);
 
@@ -98,15 +141,12 @@ async function handleMessage(message) {
 	const userId = message.author.id;
 	const guildId = message.guild.id;
 
-	const user = getUserCache(userId, guildId);
+	const user = await getUserCache(
+		userId,
+		guildId
+	);
 
-	const now = Date.now();
-
-	if (now - user.lastMessageXP < MESSAGE_COOLDOWN) {
-		return 0;
-	}
-
-	user.lastMessageXP = now;
+	if (!user) return 0;
 
 	const amount = randomXP(
 		MESSAGE_XP_MIN,
@@ -122,7 +162,7 @@ async function handleMessage(message) {
 
 	if (
 		user.messageCount >= SAVE_MESSAGE_COUNT ||
-		now - user.lastSave >= SAVE_INTERVAL
+		Date.now() - user.lastSave >= SAVE_INTERVAL
 	) {
 		await saveUser(userId);
 	}
@@ -136,7 +176,7 @@ async function handleMessage(message) {
 async function saveUser(userId) {
 	const user = users.get(userId);
 
-	if (!user) return;
+	if (!user || !user.loaded) return;
 
 	try {
 		const members = getMembersCollection();
@@ -181,7 +221,12 @@ async function handleVoiceStateUpdate(oldState, newState) {
 	const userId = member.id;
 	const guildId = guild.id;
 
-	const user = getUserCache(userId, guildId);
+	const user = await getUserCache(
+		userId,
+		guildId
+	);
+
+	if (!user) return;
 
 	if (!oldState.channelId && newState.channelId) {
 		user.voice = {
@@ -219,6 +264,7 @@ async function handleVoiceStateUpdate(oldState, newState) {
 
 async function processVoiceXP(client) {
 	for (const [userId, user] of users) {
+		if (!user.loaded) continue;
 		if (!user.voice) continue;
 
 		const guild = client.guilds.cache.get(
@@ -297,7 +343,7 @@ async function saveAll() {
 function getCachedXP(userId, guildId) {
 	const user = users.get(userId);
 
-	if (!user) return null;
+	if (!user || !user.loaded) return null;
 
 	const guild = user.guilds.get(guildId);
 
