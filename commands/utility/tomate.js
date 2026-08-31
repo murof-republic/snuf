@@ -16,8 +16,7 @@ module.exports = {
 
 		if (alvo.id === interaction.client.user.id) {
 			return interaction.reply(
-				`${alvo} jogou um 🍅 de volta em ${interaction.user}!\n` +
-				`Tá maluco? Não mexe comigo !`
+				`${alvo} jogou um 🍅 de volta em ${interaction.user}!\n\nTá maluco? Não mexe comigo!`
 			);
 		}
 
