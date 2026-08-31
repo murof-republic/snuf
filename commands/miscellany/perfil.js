@@ -125,6 +125,11 @@ module.exports = {
 						value: highestRole,
 						inline: true
 					},
+										{
+						name: 'Entrou aqui',
+						value: joinedDate,
+						inline: true
+					},
 					{
 						name: 'XP & Level',
 						value: `XP: ${formatCurrency(xp)} | Level: ${level}`,
@@ -133,11 +138,6 @@ module.exports = {
 					{
 						name: 'XP Global',
 						value: formatCurrency(globalXP),
-						inline: true
-					},
-					{
-						name: 'Entrou aqui',
-						value: joinedDate,
 						inline: true
 					}
 				)
