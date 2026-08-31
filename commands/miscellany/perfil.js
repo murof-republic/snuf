@@ -14,7 +14,7 @@ module.exports = {
 		.addUserOption(option =>
 			option
 				.setName('user')
-				.setDescription('Pessoa para ver o perfil.')
+				.setDescription('User para ver o perfil.')
 				.setRequired(false)
 		),
 
@@ -126,8 +126,8 @@ module.exports = {
 						inline: true
 					},
 					{
-						name: 'XP & Nível',
-						value: `XP: ${formatCurrency(xp)} | Nível: ${level}`,
+						name: 'XP & Level',
+						value: `XP: ${formatCurrency(xp)} | Level: ${level}`,
 						inline: true
 					},
 					{
