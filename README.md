@@ -5,6 +5,7 @@ Tenha ferramentas para **administração, interação e entretenimento**, tudo e
 ### Recursos
 
 * **Inteligência Artificial** para conversar, responder perguntas e interagir com a comunidade.
+* **Sistema de níveis** para incentivar a participação dos membros através de mensagens e canais de voz.
 * **Cores personalizadas** para os membros escolherem seus próprios cargos.
 * **Integração com Minecraft** para acompanhar o status do servidor diretamente pelo Discord.
 * **Sistema de boas-vindas e despedidas** para novos membros.
