@@ -8,7 +8,7 @@ module.exports = {
 		try {
 			await handleVoiceStateUpdate(oldState, newState);
 		} catch (error) {
-			console.error('Erro ao processar XP de voz:', error);
+			console.error('[EVENT] Erro em voiceStateUpdate:', error.message);
 		}
 	}
 };

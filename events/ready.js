@@ -1,8 +1,9 @@
 const { Events, ActivityType } = require('discord.js');
-const { startMinecraftDashboard } = require('../services/minecraft'); // Inicia o dashboard do minecraft
+const { startMinecraftDashboard } = require('../services/minecraft');
 const { startVoiceXP } = require('../services/xp');
+const logger = require('../utils/logger');
 
-const texts = [
+const PRESENCE_TEXTS = [
 	'Quer trocar a cor do seu nick? Experimente /cor...',
 	':(failure(: - Lil Yachty',
 	'IVE OFFICIALLY LOST ViSiON!!!! - Lil Yachty',
@@ -18,35 +19,63 @@ const texts = [
 	'Access now! https://discord.gg/MWrYrytMCg'
 ];
 
-let index = 0;
+const PRESENCE_UPDATE_INTERVAL = 60 * 60 * 1000;
+
+let presenceIndex = 0;
 
 module.exports = {
 	name: Events.ClientReady,
 	once: true,
 
-	execute(client) {
-		console.log(`[ONLINE] Conectado como ${client.user.tag}`);
+	async execute(client) {
+		logger.info('READY', `Conectado como ${client.user.tag}`);
 
-		const updatePresence = () => {
-			const text = texts[index % texts.length];
-			index++;
+		try {
 
-			client.user.setPresence({
-				status: 'online',
-				activities: [
-					{
-						name: text,
-						type: ActivityType.Listening
-					}
-				]
-			});
-		};
 
-		updatePresence();
+			const updatePresence = () => {
+				const text = PRESENCE_TEXTS[presenceIndex % PRESENCE_TEXTS.length];
+				presenceIndex++;
 
-		setInterval(updatePresence, 60 * 60 * 1000);
+				try {
+					client.user.setPresence({
+						status: 'online',
+						activities: [
+							{
+								name: text,
+								type: ActivityType.Listening
+							}
+						]
+					});
+				} catch (error) {
+					logger.error('READY', 'Erro ao atualizar presence', error);
+				}
+			};
 
-		startMinecraftDashboard(client);
-		startVoiceXP(client);
+			updatePresence();
+
+			setInterval(updatePresence, PRESENCE_UPDATE_INTERVAL);
+
+			logger.info('READY', 'Status de presença atualizado');
+
+
+
+			try {
+				startMinecraftDashboard(client);
+				logger.info('READY', 'Dashboard Minecraft iniciado');
+			} catch (error) {
+				logger.error('READY', 'Erro ao iniciar Dashboard Minecraft', error);
+			}
+
+			try {
+				startVoiceXP(client);
+				logger.info('READY', 'Sistema de XP iniciado');
+			} catch (error) {
+				logger.error('READY', 'Erro ao iniciar XP', error);
+			}
+
+		} catch (error) {
+			logger.error('READY', 'Erro geral na inicialização', error);
+		}
 	}
 };

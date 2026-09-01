@@ -11,13 +11,22 @@ module.exports = {
 				.setName('estacao')
 				.setDescription('Escolha a estação.')
 				.setRequired(true)
-				.addChoices(
-					...radio.getRadios().map(station => ({
-						name: station.name,
-						value: station.name
-					}))
-				)
+				.setAutocomplete(true)
 		),
+
+	autocomplete: async function(interaction) {
+		const focusedValue = interaction.options.getFocused().toLowerCase();
+		const stations = radio.getRadios();
+		const filtered = stations
+			.filter(station => station.name.toLowerCase().includes(focusedValue))
+			.slice(0, 25)
+			.map(station => ({
+				name: station.name,
+				value: station.name
+			}));
+
+		await interaction.respond(filtered);
+	},
 
 	async execute(interaction) {
 		if (!requireGuild(interaction, process.env.DISCORD_GUILD_ID, 'Esse comando só pode ser usado no servidor da rádio.')) return;

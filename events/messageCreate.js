@@ -8,7 +8,7 @@ module.exports = {
 		try {
 			await handleMessage(message);
 		} catch (error) {
-			console.error('Erro ao processar XP da mensagem:', error);
+			console.error('[EVENT] Erro em messageCreate:', error.message);
 		}
 	}
 };

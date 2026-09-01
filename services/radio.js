@@ -14,6 +14,67 @@ const CHANNEL_ID = process.env.RADIO_CHANNEL_ID;
 
 const radios = [
 	{
+		name: 'Lofi Hip Hop',
+		url: 'https://stream.openmusic.fm/lofi'
+	},
+	{
+		name: 'Chill Beats',
+		url: 'https://stream.openmusic.fm/chill'
+	},
+	{
+		name: 'Deep House',
+		url: 'https://stream.openmusic.fm/deephouse'
+	},
+	{
+		name: 'Synthwave',
+		url: 'https://stream.openmusic.fm/synthwave'
+	},
+	{
+		name: 'Lo-Fi Beats',
+		url: 'https://stream.openmusic.fm/lofibeats'
+	},
+	{
+		name: 'Jazz',
+		url: 'https://stream.openmusic.fm/jazz'
+	},
+	{
+		name: 'Classical',
+		url: 'https://stream.openmusic.fm/classical'
+	},
+	{
+		name: 'Piano',
+		url: 'https://stream.openmusic.fm/piano'
+	},
+	{
+		name: 'Ambient',
+		url: 'https://stream.openmusic.fm/ambient'
+	},
+	{
+		name: 'Study Music',
+		url: 'https://stream.openmusic.fm/studymusic'
+	},
+	{
+		name: 'Chillwave',
+		url: 'https://stream.openmusic.fm/chillwave'
+	},
+	{
+		name: 'Indie',
+		url: 'https://stream.openmusic.fm/indie'
+	},
+	{
+		name: 'Electronic',
+		url: 'https://stream.openmusic.fm/electronic'
+	},
+	{
+		name: 'Vaporwave',
+		url: 'https://stream.openmusic.fm/vaporwave'
+	},
+	{
+		name: 'Cyberpunk',
+		url: 'https://stream.openmusic.fm/cyberpunk'
+	},
+
+	{
 		name: 'R2 Chill',
 		url: 'https://icecast.err.ee/r2chill.opus'
 	},
@@ -157,8 +218,6 @@ async function startRadio(client) {
 		started = true;
 
 		await playNextRadio(channel);
-
-		console.log('[RADIO] Conectada!');
 
 	} catch {
 		stopStream();
@@ -420,10 +479,39 @@ function getRadios() {
 	return radios;
 }
 
+function stopRadio() {
+	if (!started) {
+		return false;
+	}
+
+	try {
+		started = false;
+		stopStream();
+
+		if (player) {
+			player.stop();
+		}
+
+		if (connection) {
+			connection.destroy();
+			connection = null;
+		}
+
+		player = null;
+		currentRadio = null;
+		currentChannel = null;
+
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 module.exports = {
 	startRadio,
 	skipSong,
 	setRadio,
 	getCurrentChannelId,
-	getRadios
+	getRadios,
+	stopRadio
 };

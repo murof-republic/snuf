@@ -11,7 +11,7 @@ const missingEnv = requiredEnv.filter(key => !process.env[key]);
 
 if (missingEnv.length) {
 	throw new Error(
-		`Variáveis de ambiente do Firebase ausentes: ${missingEnv.join(', ')}`
+		`[FIREBASE] Variáveis ausentes: ${missingEnv.join(', ')}`
 	);
 }
 
@@ -21,19 +21,32 @@ const serviceAccount = {
 	privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
 };
 
-initializeApp({
-	credential: cert(serviceAccount),
-});
+try {
+	initializeApp({
+		credential: cert(serviceAccount),
+	});
+	console.log('[FIREBASE] Inicializado com sucesso');
+} catch (error) {
+	console.error('[FIREBASE] Erro ao inicializar:', error.message);
+	throw error;
+}
 
 const db = getFirestore();
 
 async function connect() {
-	await db.collection('login').doc('connection').set({
-		connected: true,
-		timestamp: new Date(),
-	});
+	try {
+		await db.collection('login').doc('connection').set({
+			connected: true,
+			timestamp: new Date(),
+		});
 
-	console.log('[FIREBASE] Conectado!');
+		console.log('[FIREBASE] Conectado!');
+		return true;
+
+	} catch (error) {
+		console.error('[FIREBASE] Erro na conexão:', error.message);
+		return false;
+	}
 }
 
 function getGuildsCollection() {

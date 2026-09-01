@@ -1,102 +1,101 @@
 const { Events, MessageFlags, Collection } = require('discord.js');
+const logger = require('../utils/logger');
+
+const DEFAULT_COOLDOWN = 3;
 
 module.exports = {
-    name: Events.InteractionCreate,
+	name: Events.InteractionCreate,
 
-    async execute(interaction) {
-        if (interaction.isAutocomplete()) {
-            const command = interaction.client.commands.get(
-                interaction.commandName
-            );
+	async execute(interaction) {
+		if (interaction.isAutocomplete()) {
+			const command = interaction.client.commands.get(
+				interaction.commandName
+			);
 
-            if (!command || !command.autocomplete) return;
+			if (!command || !command.autocomplete) return;
 
-            try {
-                await command.autocomplete(interaction);
-            } catch (error) {
-                console.error('Erro no autocomplete:', error);
-            }
+			try {
+				await command.autocomplete(interaction);
+			} catch (error) {
+				logger.error('INTERACTION', `Erro no autocomplete ${interaction.commandName}`, error);
+			}
 
-            return;
-        }
+			return;
+		}
 
-        if (!interaction.isChatInputCommand()) return;
+		if (!interaction.isChatInputCommand()) return;
 
-        const command = interaction.client.commands.get(
-            interaction.commandName
-        );
+		const command = interaction.client.commands.get(
+			interaction.commandName
+		);
 
-        if (!command) {
-            console.error(
-                `Não foi encontrado nenhum comando correspondente a ${interaction.commandName}.`
-            );
-            return;
-        }
+		if (!command) {
+			logger.warn('INTERACTION', `Comando não encontrado: ${interaction.commandName}`);
+			return;
+		}
 
-        const { cooldowns } = interaction.client;
 
-        if (!cooldowns.has(command.data.name)) {
-            cooldowns.set(command.data.name, new Collection());
-        }
 
-        const now = Date.now();
-        const timestamps = cooldowns.get(command.data.name);
-        const defaultCooldownDuration = 3;
-        const cooldownAmount =
-            (command.cooldown ?? defaultCooldownDuration) * 1_000;
+		const { cooldowns } = interaction.client;
 
-        if (timestamps.has(interaction.user.id)) {
-            const expirationTime =
-                timestamps.get(interaction.user.id) + cooldownAmount;
+		if (!cooldowns.has(command.data.name)) {
+			cooldowns.set(command.data.name, new Collection());
+		}
 
-            if (now < expirationTime) {
-                const expiredTimestamp = Math.round(
-                    expirationTime / 1_000
-                );
+		const now = Date.now();
+		const timestamps = cooldowns.get(command.data.name);
+		const cooldownAmount = (command.cooldown ?? DEFAULT_COOLDOWN) * 1_000;
 
-                return interaction.reply({
-                    content: `Aguarde, você está em um tempo de espera para usar o comando ${command.data.name} novamente. Você poderá usá-lo novamente <t:${expiredTimestamp}:R>.`,
-                    flags: MessageFlags.Ephemeral,
-                });
-            }
-        }
+		if (timestamps.has(interaction.user.id)) {
+			const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
 
-        timestamps.set(interaction.user.id, now);
+			if (now < expirationTime) {
+				const expiredTimestamp = Math.round(expirationTime / 1_000);
 
-        setTimeout(() => {
-            timestamps.delete(interaction.user.id);
-        }, cooldownAmount);
+				return interaction.reply({
+					content: `Cooldown ativo. Tente novamente <t:${expiredTimestamp}:R>.`,
+					flags: MessageFlags.Ephemeral,
+				}).catch(error => {
+					logger.error('INTERACTION', 'Erro ao enviar mensagem de cooldown', error);
+				});
+			}
+		}
 
-        try {
-            await command.execute(interaction);
-        } catch (error) {
-            console.error(error);
+		timestamps.set(interaction.user.id, now);
 
-            if (interaction.replied || interaction.deferred) {
-                try {
-                    await interaction.followUp({
-                        content: 'Houve um erro ao executar este comando!',
-                        flags: MessageFlags.Ephemeral,
-                    });
-                } catch (followUpError) {
-                    console.error(
-                        'Erro ao enviar mensagem de erro:',
-                        followUpError
-                    );
-                }
-            } else {
-                try {
-                    await interaction.reply({
-                        content: 'Houve um erro ao executar este comando!',
-                        flags: MessageFlags.Ephemeral,
-                    });
-                } catch (replyError) {
-                    console.error(
-                        'Erro ao enviar mensagem de erro:',
-                        replyError
-                    );
-                }
-            }
-        }
-    },
+		setTimeout(() => {
+			timestamps.delete(interaction.user.id);
+		}, cooldownAmount);
+
+
+
+		try {
+			logger.debug('INTERACTION', `Executando comando: ${command.data.name} por ${interaction.user.username}`);
+
+			await command.execute(interaction);
+
+			logger.debug('INTERACTION', `Comando ${command.data.name} executado com sucesso`);
+
+		} catch (error) {
+			logger.error('INTERACTION', `Erro ao executar comando ${command.data.name}`, error);
+
+			const errorMessage = 'Houve um erro ao executar este comando!';
+
+			try {
+				if (interaction.replied || interaction.deferred) {
+					await interaction.followUp({
+						content: errorMessage,
+						flags: MessageFlags.Ephemeral,
+					});
+				} else {
+					await interaction.reply({
+						content: errorMessage,
+						flags: MessageFlags.Ephemeral,
+					});
+				}
+			} catch (responseError) {
+				logger.error('INTERACTION', 'Erro ao enviar mensagem de erro', responseError);
+			}
+		}
+	}
 };

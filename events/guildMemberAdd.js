@@ -9,7 +9,7 @@ module.exports = {
         try {
             const config = await guilds.get(member.guild.id);
 
-            // Autorole
+
             if (config?.autorole?.enabled && config.autorole.roleId) {
                 const role = member.guild.roles.cache.get(
                     config.autorole.roleId
@@ -20,7 +20,7 @@ module.exports = {
                 }
             }
 
-            // Welcome
+
             if (
                 !config?.welcome?.enabled ||
                 !config.welcome.channelId ||
