@@ -8,16 +8,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/triggerww/snuf.git"
+    "url": "git+https://github.com/murof-republic/snuf.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/triggerww/snuf/issues"
+    "url": "https://github.com/murof-republic/snuf/issues"
   },
-  "homepage": "https://github.com/triggerww/snuf#readme",
+  "homepage": "https://github.com/murof-republic/snuf#readme",
   "dependencies": {
     "@azure/ai-projects": "^2.5.0",
     "@azure/identity": "^4.13.2",
