@@ -1,3 +1,5 @@
+const { spawn } = require('node:child_process');
+
 const {
 	joinVoiceChannel,
 	createAudioPlayer,
@@ -10,12 +12,14 @@ const {
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const CHANNEL_ID = process.env.RADIO_CHANNEL_ID;
 
-const RADIO_STREAM = 'http://stream-tx1.radioparadise.com/mp3-128';
+const RADIO_STREAM =
+	'http://stream-tx1.radioparadise.com/mp3-128';
 
 let connection = null;
 let player = null;
-let resource = null;
+let ffmpeg = null;
 let started = false;
+let changingStream = false;
 
 async function startRadio(client) {
 	if (started) return;
@@ -41,7 +45,7 @@ async function startRadio(client) {
 			return;
 		}
 
-		console.log('[RADIO] Conectada!');
+		console.log('[RADIO] Conectando');
 
 		connection = joinVoiceChannel({
 			channelId: channel.id,
@@ -58,22 +62,23 @@ async function startRadio(client) {
 		connection.on(
 			VoiceConnectionStatus.Disconnected,
 			() => {
+				stopFFmpeg();
 				started = false;
 			}
 		);
 
 		player.on(AudioPlayerStatus.Idle, () => {
-			if (!started) return;
+			if (!started || changingStream) return;
 
-			playRadio(channel).catch(() => {});
+			reconnectStream(channel);
 		});
 
-		player.on('error', () => {
-			setTimeout(() => {
-				if (started) {
-					playRadio(channel).catch(() => {});
-				}
-			}, 3000);
+		player.on('error', error => {
+			console.error('[RADIO] Player:', error.message);
+
+			if (!started || changingStream) return;
+
+			reconnectStream(channel);
 		});
 
 		await waitForConnection();
@@ -82,8 +87,15 @@ async function startRadio(client) {
 
 		await playRadio(channel);
 
-	} catch {
+	} catch (error) {
+		console.error(
+			'[RADIO] Erro ao iniciar:',
+			error.message
+		);
+
 		started = false;
+
+		stopFFmpeg();
 
 		if (connection) {
 			connection.destroy();
@@ -107,8 +119,11 @@ async function waitForConnection() {
 	await new Promise((resolve, reject) => {
 		const timeout = setTimeout(() => {
 			cleanup();
+
 			reject(
-				new Error('Timeout na conexão de voz.')
+				new Error(
+					'Timeout na conexão de voz.'
+				)
 			);
 		}, 30000);
 
@@ -119,8 +134,11 @@ async function waitForConnection() {
 
 		const onDisconnected = () => {
 			cleanup();
+
 			reject(
-				new Error('Conexão perdida.')
+				new Error(
+					'Conexão perdida.'
+				)
 			);
 		};
 
@@ -151,33 +169,162 @@ async function waitForConnection() {
 }
 
 async function playRadio(channel) {
-	if (!player || !connection) {
+	if (!player || !connection || !started) {
 		return;
 	}
 
-	try {
-		resource = createAudioResource(
+	stopFFmpeg();
+
+	console.log('[RADIO] Iniciando stream');
+
+	ffmpeg = spawn(
+		'ffmpeg',
+		[
+			'-reconnect',
+			'1',
+
+			'-reconnect_streamed',
+			'1',
+
+			'-reconnect_delay_max',
+			'5',
+
+			'-i',
 			RADIO_STREAM,
-			{
-				inputType: StreamType.Raw,
-				inlineVolume: false
-			}
+
+			'-vn',
+
+			'-f',
+			's16le',
+
+			'-ar',
+			'48000',
+
+			'-ac',
+			'2',
+
+			'-loglevel',
+			'error',
+
+			'pipe:1'
+		],
+		{
+			stdio: [
+				'ignore',
+				'pipe',
+				'pipe'
+			]
+		}
+	);
+
+	const processRef = ffmpeg;
+
+	ffmpeg.on('spawn', () => {
+		console.log('[RADIO] FFmpeg iniciado');
+	});
+
+	let totalBytes = 0;
+
+	ffmpeg.stdout.on('data', data => {
+		totalBytes += data.length;
+
+		console.log(
+			`[RADIO] Áudio recebido: ${data.length} bytes`
+		);
+	});
+
+	ffmpeg.stderr.on('data', data => {
+		const message = data
+			.toString()
+			.trim();
+
+		if (message) {
+			console.error(
+				'[RADIO] FFmpeg:',
+				message
+			);
+		}
+	});
+
+	ffmpeg.on('error', error => {
+		console.error(
+			'[RADIO] Erro no FFmpeg:',
+			error.message
 		);
 
-		player.play(resource);
+		if (ffmpeg === processRef) {
+			ffmpeg = null;
+		}
+	});
 
-		await updateVoiceStatus(
-			channel,
-			'Radio Paradise'
+	ffmpeg.on('close', code => {
+		console.log(
+			`[RADIO] FFmpeg encerrou. Código: ${code}. Bytes recebidos: ${totalBytes}`
 		);
 
-	} catch {
-		setTimeout(() => {
-			if (started) {
-				playRadio(channel).catch(() => {});
-			}
-		}, 5000);
+		if (ffmpeg === processRef) {
+			ffmpeg = null;
+		}
+
+		if (
+			started &&
+			!changingStream
+		) {
+			setTimeout(() => {
+				if (started) {
+					playRadio(channel)
+						.catch(() => {});
+				}
+			}, 5000);
+		}
+	});
+
+	const resource = createAudioResource(
+		ffmpeg.stdout,
+		{
+			inputType: StreamType.Raw,
+			inlineVolume: false
+		}
+	);
+
+	player.play(resource);
+
+	console.log('[RADIO] Player iniciou');
+
+	await updateVoiceStatus(
+		channel,
+		'Radio Paradise'
+	);
+}
+
+function stopFFmpeg() {
+	if (ffmpeg) {
+		try {
+			ffmpeg.kill('SIGKILL');
+		} catch {
+		}
+
+		ffmpeg = null;
 	}
+}
+
+function reconnectStream(channel) {
+	if (changingStream) return;
+
+	changingStream = true;
+
+	stopFFmpeg();
+
+	setTimeout(async () => {
+		try {
+			if (started) {
+				await playRadio(channel);
+			}
+		} catch {
+		} finally {
+			changingStream = false;
+		}
+	}, 3000);
 }
 
 async function updateVoiceStatus(channel, status) {
@@ -200,6 +347,8 @@ async function skipSong() {
 	}
 
 	try {
+		stopFFmpeg();
+
 		player.stop();
 
 		return true;
