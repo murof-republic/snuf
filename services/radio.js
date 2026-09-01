@@ -41,7 +41,7 @@ async function startRadio(client) {
 			return;
 		}
 
-		console.log('[RADIO] Conectanda!');
+		console.log('[RADIO] Conectada!');
 
 		connection = joinVoiceChannel({
 			channelId: channel.id,
