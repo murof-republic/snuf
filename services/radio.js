@@ -13,13 +13,13 @@ const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const CHANNEL_ID = process.env.RADIO_CHANNEL_ID;
 
 const RADIO_STREAM =
-	'http://stream-tx1.radioparadise.com/mp3-128';
+	'https://streaming.radio.co/s8f5d0b7a8/listen';
 
 let connection = null;
 let player = null;
 let ffmpeg = null;
 let started = false;
-let changingStream = false;
+let restarting = false;
 
 async function startRadio(client) {
 	if (started) return;
@@ -68,17 +68,24 @@ async function startRadio(client) {
 		);
 
 		player.on(AudioPlayerStatus.Idle, () => {
-			if (!started || changingStream) return;
+			if (!started || restarting) {
+				return;
+			}
 
-			reconnectStream(channel);
+			restartRadio(channel);
 		});
 
 		player.on('error', error => {
-			console.error('[RADIO] Player:', error.message);
+			console.error(
+				'[RADIO] Player:',
+				error.message
+			);
 
-			if (!started || changingStream) return;
+			if (!started || restarting) {
+				return;
+			}
 
-			reconnectStream(channel);
+			restartRadio(channel);
 		});
 
 		await waitForConnection();
@@ -177,9 +184,14 @@ async function playRadio(channel) {
 
 	console.log('[RADIO] Iniciando stream');
 
-	ffmpeg = spawn(
+	const processRef = spawn(
 		'ffmpeg',
 		[
+			'-hide_banner',
+
+			'-loglevel',
+			'error',
+
 			'-reconnect',
 			'1',
 
@@ -188,6 +200,7 @@ async function playRadio(channel) {
 
 			'-reconnect_delay_max',
 			'5',
+
 			'-i',
 			RADIO_STREAM,
 
@@ -202,9 +215,6 @@ async function playRadio(channel) {
 			'-ac',
 			'2',
 
-			'-loglevel',
-			'error',
-
 			'pipe:1'
 		],
 		{
@@ -216,23 +226,22 @@ async function playRadio(channel) {
 		}
 	);
 
-	const processRef = ffmpeg;
+	ffmpeg = processRef;
 
-	ffmpeg.on('spawn', () => {
+	let receivedAudio = false;
+
+	processRef.on('spawn', () => {
 		console.log('[RADIO] FFmpeg iniciado');
 	});
 
-	let totalBytes = 0;
-
-	ffmpeg.stdout.on('data', data => {
-		totalBytes += data.length;
-
-		console.log(
-			`[RADIO] Áudio recebido: ${data.length} bytes`
-		);
+	processRef.stdout.on('data', data => {
+		if (!receivedAudio) {
+			receivedAudio = true;
+			console.log('[RADIO] Áudio recebido');
+		}
 	});
 
-	ffmpeg.stderr.on('data', data => {
+	processRef.stderr.on('data', data => {
 		const message = data
 			.toString()
 			.trim();
@@ -245,9 +254,9 @@ async function playRadio(channel) {
 		}
 	});
 
-	ffmpeg.on('error', error => {
+	processRef.on('error', error => {
 		console.error(
-			'[RADIO] Erro no FFmpeg:',
+			'[RADIO] FFmpeg:',
 			error.message
 		);
 
@@ -256,30 +265,31 @@ async function playRadio(channel) {
 		}
 	});
 
-	ffmpeg.on('close', code => {
-		console.log(
-			`[RADIO] FFmpeg encerrou. Código: ${code}. Bytes recebidos: ${totalBytes}`
-		);
-
+	processRef.on('close', code => {
 		if (ffmpeg === processRef) {
 			ffmpeg = null;
 		}
 
 		if (
+			code !== 0 &&
 			started &&
-			!changingStream
+			!restarting
 		) {
+			console.error(
+				`[RADIO] FFmpeg encerrou com código ${code}`
+			);
+
 			setTimeout(() => {
 				if (started) {
 					playRadio(channel)
 						.catch(() => {});
 				}
-			}, 5000);
+			}, 10000);
 		}
 	});
 
 	const resource = createAudioResource(
-		ffmpeg.stdout,
+		processRef.stdout,
 		{
 			inputType: StreamType.Raw,
 			inlineVolume: false
@@ -288,29 +298,31 @@ async function playRadio(channel) {
 
 	player.play(resource);
 
-	console.log('[RADIO] Player iniciou');
-
 	await updateVoiceStatus(
 		channel,
-		'Radio Paradise'
+		'Radio'
 	);
 }
 
 function stopFFmpeg() {
-	if (ffmpeg) {
-		try {
-			ffmpeg.kill('SIGKILL');
-		} catch {
-		}
-
-		ffmpeg = null;
+	if (!ffmpeg) {
+		return;
 	}
+
+	try {
+		ffmpeg.kill('SIGKILL');
+	} catch {
+	}
+
+	ffmpeg = null;
 }
 
-function reconnectStream(channel) {
-	if (changingStream) return;
+function restartRadio(channel) {
+	if (restarting) {
+		return;
+	}
 
-	changingStream = true;
+	restarting = true;
 
 	stopFFmpeg();
 
@@ -321,9 +333,9 @@ function reconnectStream(channel) {
 			}
 		} catch {
 		} finally {
-			changingStream = false;
+			restarting = false;
 		}
-	}, 3000);
+	}, 5000);
 }
 
 async function updateVoiceStatus(channel, status) {
