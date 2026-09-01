@@ -48,7 +48,6 @@ module.exports = {
 			const userSnapshot = await userRef.get();
 
 			let credits = 0;
-			let globalXP = 0;
 			let xp = 0;
 
 			if (userSnapshot.exists) {
@@ -57,11 +56,6 @@ module.exports = {
 				credits =
 					typeof data.credits === 'number'
 						? data.credits
-						: 0;
-
-				globalXP =
-					typeof data.xpGlobal === 'number'
-						? data.xpGlobal
 						: 0;
 
 				const serverData =
@@ -79,7 +73,6 @@ module.exports = {
 			);
 
 			if (cachedXP) {
-				globalXP = cachedXP.globalXP;
 				xp = cachedXP.xp;
 			}
 
@@ -133,11 +126,6 @@ module.exports = {
 					{
 						name: 'XP & Level',
 						value: `XP: ${formatCurrency(xp)} | Level: ${level}`,
-						inline: true
-					},
-					{
-						name: 'XP Global',
-						value: formatCurrency(globalXP),
 						inline: true
 					}
 				)

@@ -1,4 +1,5 @@
 const { getMembersCollection } = require('./firebase');
+const { FieldValue } = require('firebase-admin/firestore');
 
 const MESSAGE_XP_MIN = 5;
 const MESSAGE_XP_MAX = 15;
@@ -40,7 +41,6 @@ async function getUserCache(userId, guildId) {
 
 	if (!user) {
 		user = {
-			globalXP: 0,
 			guilds: new Map(),
 			messageCount: 0,
 			lastSave: Date.now(),
@@ -77,7 +77,6 @@ async function getUserCache(userId, guildId) {
 
 		if (snapshot.exists) {
 			const data = snapshot.data();
-			user.globalXP = typeof data.xpGlobal === 'number' ? data.xpGlobal : 0;
 
 			if (data.servers && typeof data.servers === 'object') {
 				for (const [serverId, serverData] of Object.entries(data.servers)) {
@@ -117,7 +116,6 @@ function addXP(userId, guildId, amount, channel) {
 
 	const oldLevel = getLevel(guild.xp);
 
-	user.globalXP += amount;
 	guild.xp += amount;
 
 	const newLevel = getLevel(guild.xp);
@@ -187,7 +185,7 @@ async function saveUser(userId) {
 		const members = getMembersCollection();
 
 		const data = {
-			xpGlobal: Math.max(0, user.globalXP),
+			xpGlobal: FieldValue.delete(),
 			servers: {}
 		};
 
@@ -378,10 +376,8 @@ function getCachedXP(userId, guildId) {
 	}
 
 	return {
-		globalXP: Math.max(0, user.globalXP),
 		xp: Math.max(0, guild.xp),
-		level: getLevel(guild.xp),
-		globalLevel: getLevel(user.globalXP)
+		level: getLevel(guild.xp)
 	};
 }
 

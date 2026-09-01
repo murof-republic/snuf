@@ -5,7 +5,7 @@ const { getCachedXP, XP_PER_LEVEL } = require('../../services/xp');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('level')
-		.setDescription('Mostra seu level no servidor e global.')
+		.setDescription('Mostra seu level no servidor.')
 		.addUserOption(option =>
 			option
 				.setName('user')
@@ -29,13 +29,11 @@ module.exports = {
 			const userId = target.id;
 			const guildId = interaction.guild.id;
 
-			let globalXP = 0;
 			let serverXP = 0;
 
 			const cachedXP = getCachedXP(userId, guildId);
 
 			if (cachedXP) {
-				globalXP = cachedXP.globalXP;
 				serverXP = cachedXP.xp;
 			} else {
 				const members = getMembersCollection();
@@ -43,11 +41,6 @@ module.exports = {
 
 				if (snapshot.exists) {
 					const data = snapshot.data();
-
-					globalXP =
-						typeof data.xpGlobal === 'number'
-							? data.xpGlobal
-							: 0;
 
 					serverXP =
 						typeof data.servers?.[guildId]?.xp === 'number'
@@ -60,12 +53,8 @@ module.exports = {
 				serverXP / XP_PER_LEVEL
 			);
 
-			const globalLevel = Math.floor(
-				globalXP / XP_PER_LEVEL
-			);
-
 			return interaction.reply({
-				content: `${target} está no level ${serverLevel} (${serverXP.toLocaleString('pt-BR')} XP) neste servidor e level ${globalLevel} (${globalXP.toLocaleString('pt-BR')} XP) globalmente.`
+				content: `${target} está no level ${serverLevel} (${serverXP.toLocaleString('pt-BR')} XP) neste servidor.`
 			});
 
 		} catch (error) {
