@@ -1,4 +1,4 @@
-const { spawn } = require('node:child_process');
+const https = require('node:https');
 
 const {
 	joinVoiceChannel,
@@ -11,22 +11,41 @@ const {
 
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const CHANNEL_ID = process.env.RADIO_CHANNEL_ID;
-//
-const RADIO_STREAM =
-	'https://streaming.radio.co/s8f5d0b7a8/listen';
+
+const radios = [
+	{
+		name: 'R2 Chill',
+		url: 'https://icecast.err.ee/r2chill.opus'
+	},
+	{
+		name: 'R2 Pop',
+		url: 'https://icecast.err.ee/r2pop.opus'
+	},
+	{
+		name: 'R2 Rock',
+		url: 'https://icecast.err.ee/r2rock.opus'
+	},
+	{
+		name: 'R2 Alternatiiv',
+		url: 'https://icecast.err.ee/r2alternatiiv.opus'
+	},
+	{
+		name: 'R2p',
+		url: 'https://icecast.err.ee/r2p.opus'
+	}
+];
 
 let connection = null;
 let player = null;
-let ffmpeg = null;
+let stream = null;
 let started = false;
+let changing = false;
+let currentRadio = null;
 
 async function startRadio(client) {
 	if (started) return;
 
 	if (!GUILD_ID || !CHANNEL_ID) {
-		console.error(
-			'[RADIO] DISCORD_GUILD_ID ou RADIO_CHANNEL_ID não configurado.'
-		);
 		return;
 	}
 
@@ -36,7 +55,6 @@ async function startRadio(client) {
 			.catch(() => null);
 
 		if (!guild) {
-			console.error('[RADIO] Servidor não encontrado.');
 			return;
 		}
 
@@ -45,11 +63,8 @@ async function startRadio(client) {
 			.catch(() => null);
 
 		if (!channel || !channel.isVoiceBased()) {
-			console.error('[RADIO] Canal de voz não encontrado.');
 			return;
 		}
-
-		console.log('[RADIO] Conectando');
 
 		connection = joinVoiceChannel({
 			channelId: channel.id,
@@ -66,53 +81,43 @@ async function startRadio(client) {
 		connection.on(
 			VoiceConnectionStatus.Disconnected,
 			() => {
-				console.error('[RADIO] Discord desconectou.');
-				stopFFmpeg();
+				stopStream();
 				started = false;
-			}
-		);
-
-		player.on(
-			AudioPlayerStatus.Playing,
-			() => {
-				console.log('[RADIO] Player está tocando.');
 			}
 		);
 
 		player.on(
 			AudioPlayerStatus.Idle,
 			() => {
-				console.log('[RADIO] Player ficou parado.');
+				if (started && !changing) {
+					playNextRadio(channel);
+				}
 			}
 		);
 
-		player.on('error', error => {
-			console.error(
-				'[RADIO] Erro do player:',
-				error
-			);
+		player.on('error', () => {
+			if (started && !changing) {
+				playNextRadio(channel);
+			}
 		});
 
 		await waitForConnection();
 
 		started = true;
 
-		await playRadio(channel);
+		await playNextRadio(channel);
 
-	} catch (error) {
-		console.error(
-			'[RADIO] Erro ao iniciar:',
-			error
-		);
+		console.log('[RADIO] Conectada!');
 
-		started = false;
-
-		stopFFmpeg();
+	} catch {
+		stopStream();
 
 		if (connection) {
 			connection.destroy();
 			connection = null;
 		}
+
+		started = false;
 	}
 }
 
@@ -131,12 +136,7 @@ async function waitForConnection() {
 	await new Promise((resolve, reject) => {
 		const timeout = setTimeout(() => {
 			cleanup();
-
-			reject(
-				new Error(
-					'Timeout na conexão de voz.'
-				)
-			);
+			reject(new Error('Timeout'));
 		}, 30000);
 
 		const onReady = () => {
@@ -146,12 +146,7 @@ async function waitForConnection() {
 
 		const onDisconnected = () => {
 			cleanup();
-
-			reject(
-				new Error(
-					'Conexão perdida.'
-				)
-			);
+			reject(new Error('Desconectado'));
 		};
 
 		function cleanup() {
@@ -180,135 +175,107 @@ async function waitForConnection() {
 	});
 }
 
-async function playRadio(channel) {
-	if (!player || !connection || !started) {
+async function playNextRadio(channel) {
+	if (!player || !connection || !started || changing) {
 		return;
 	}
 
-	stopFFmpeg();
-
-	console.log('[RADIO] Iniciando stream');
-
-	ffmpeg = spawn(
-		'ffmpeg',
-		[
-			'-hide_banner',
-
-			'-loglevel',
-			'verbose',
-
-			'-reconnect',
-			'1',
-
-			'-reconnect_streamed',
-			'1',
-
-			'-reconnect_delay_max',
-			'5',
-
-			'-i',
-			RADIO_STREAM,
-
-			'-vn',
-
-			'-f',
-			's16le',
-
-			'-ar',
-			'48000',
-
-			'-ac',
-			'2',
-
-			'pipe:1'
-		],
-		{
-			stdio: [
-				'ignore',
-				'pipe',
-				'pipe'
-			]
-		}
-	);
-
-	const processRef = ffmpeg;
-
-	let receivedAudio = false;
-
-	processRef.on('spawn', () => {
-		console.log('[RADIO] FFmpeg iniciado.');
-	});
-
-	processRef.stdout.on('data', data => {
-		if (!receivedAudio) {
-			receivedAudio = true;
-
-			console.log(
-				`[RADIO] Áudio recebido (${data.length} bytes).`
-			);
-		}
-	});
-
-	processRef.stderr.on('data', data => {
-		const message = data
-			.toString()
-			.trim();
-
-		if (message) {
-			console.error(
-				`[RADIO] FFmpeg: ${message}`
-			);
-		}
-	});
-
-	processRef.on('error', error => {
-		console.error(
-			'[RADIO] Erro ao executar FFmpeg:',
-			error
-		);
-
-		if (ffmpeg === processRef) {
-			ffmpeg = null;
-		}
-	});
-
-	processRef.on('close', (code, signal) => {
-		console.error(
-			`[RADIO] FFmpeg encerrou. Código: ${code} | Sinal: ${signal} | Áudio recebido: ${receivedAudio}`
-		);
-
-		if (ffmpeg === processRef) {
-			ffmpeg = null;
-		}
-	});
-
-	const resource = createAudioResource(
-		processRef.stdout,
-		{
-			inputType: StreamType.Raw,
-			inlineVolume: false
-		}
-	);
-
-	player.play(resource);
-
-	await updateVoiceStatus(
-		channel,
-		'Radio'
-	);
-}
-
-function stopFFmpeg() {
-	if (!ffmpeg) {
-		return;
-	}
+	changing = true;
 
 	try {
-		ffmpeg.kill('SIGKILL');
-	} catch {
-	}
+		stopStream();
 
-	ffmpeg = null;
+		const availableRadios = radios.filter(
+			radio => radio !== currentRadio
+		);
+
+		const radio =
+			availableRadios[
+				Math.floor(
+					Math.random() * availableRadios.length
+				)
+			];
+
+		const success = await playRadio(
+			channel,
+			radio
+		);
+
+		if (success) {
+			currentRadio = radio;
+		} else {
+			setTimeout(() => {
+				if (started) {
+					playNextRadio(channel);
+				}
+			}, 5000);
+		}
+
+	} catch {
+		setTimeout(() => {
+			if (started) {
+				playNextRadio(channel);
+			}
+		}, 5000);
+	} finally {
+		changing = false;
+	}
+}
+
+function playRadio(channel, radio) {
+	return new Promise((resolve, reject) => {
+		const request = https.get(
+			radio.url,
+			response => {
+				if (response.statusCode !== 200) {
+					response.resume();
+					reject(
+						new Error(
+							`HTTP ${response.statusCode}`
+						)
+					);
+					return;
+				}
+
+				stream = response;
+
+				const resource =
+					createAudioResource(
+						response,
+						{
+							inputType:
+								StreamType.OggOpus
+						}
+					);
+
+				player.play(resource);
+
+				updateVoiceStatus(
+					channel,
+					radio.name
+				);
+
+				resolve(true);
+			}
+		);
+
+		request.setTimeout(15000, () => {
+			request.destroy();
+		});
+
+		request.on('error', reject);
+	});
+}
+
+function stopStream() {
+	if (stream) {
+		try {
+			stream.destroy();
+		} catch {
+		}
+
+		stream = null;
+	}
 }
 
 async function updateVoiceStatus(channel, status) {
@@ -326,19 +293,13 @@ async function updateVoiceStatus(channel, status) {
 }
 
 async function skipSong() {
-	if (!player) {
+	if (!player || !started || changing) {
 		return false;
 	}
 
-	try {
-		stopFFmpeg();
+	player.stop();
 
-		player.stop();
-
-		return true;
-	} catch {
-		return false;
-	}
+	return true;
 }
 
 module.exports = {
