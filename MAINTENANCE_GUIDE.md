@@ -1,4 +1,4 @@
-# Guia de Manutenção - Bot Snuf
+# Guia de Manutenção 
 
 ## Melhorias Implementadas
 
@@ -56,7 +56,7 @@ utils/
 
 ---
 
-## 🔧 Como Usar o Logger
+## Como Usar o Logger
 
 ```javascript
 const logger = require('../utils/logger');
