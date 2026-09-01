@@ -2,9 +2,10 @@ require('dotenv').config();
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { Client, Collection, Events, GatewayIntentBits, MessageFlags} = require('discord.js');
+const { Client, Collection, Events, GatewayIntentBits} = require('discord.js');
 const foundry = require('./services/foundry');
 const database = require('./services/firebase');
+const radio = require('./services/radio');
 
 const client = new Client({
 	intents: [
@@ -12,6 +13,7 @@ const client = new Client({
 		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.MessageContent,
+		GatewayIntentBits.GuildVoiceStates
 	],
 });
 
@@ -60,4 +62,8 @@ for (const file of eventFiles) {
 
 database.connect().then(() => {
 	client.login(process.env.DISCORD_TOKEN);
+});
+
+client.once(Events.ClientReady, () => {
+	radio.startRadio(client);
 });

@@ -19,7 +19,7 @@ async function connect() {
 		timestamp: new Date(),
 	});
 
-	console.log('Firebase conectado!');
+	console.log('[FIREBASE] Conectado!');
 }
 
 function getGuildsCollection() {

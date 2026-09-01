@@ -25,7 +25,7 @@ module.exports = {
 	once: true,
 
 	execute(client) {
-		console.log(`Pronto! Conectado como ${client.user.tag}`);
+		console.log(`[ONLINE] Conectado como ${client.user.tag}`);
 
 		const updatePresence = () => {
 			const text = texts[index % texts.length];
