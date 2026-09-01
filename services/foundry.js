@@ -9,26 +9,41 @@ const requiredEnv = [
     'FOUNDRY_AGENT_NAME'
 ];
 
-const missingEnv = requiredEnv.filter(key => !process.env[key]);
+const missingEnvOnBoot = requiredEnv.filter(key => !process.env[key]);
 
-if (missingEnv.length) {
-    throw new Error(
-        `Variáveis de ambiente do Foundry ausentes: ${missingEnv.join(', ')}`
+if (missingEnvOnBoot.length) {
+    console.warn(
+        `[FOUNDRY] Desativado por variáveis ausentes: ${missingEnvOnBoot.join(', ')}`
     );
 }
 
-const credential = new ClientSecretCredential(
-    process.env.AZURE_TENANT_ID,
-    process.env.AZURE_CLIENT_ID,
-    process.env.AZURE_CLIENT_SECRET
-);
+let openai = null;
 
-const project = new AIProjectClient(
-    process.env.FOUNDRY_PROJECT_ENDPOINT,
-    credential
-);
+function getOpenAIClient() {
+    if (openai) return openai;
 
-const openai = project.getOpenAIClient();
+    const missingEnv = requiredEnv.filter(key => !process.env[key]);
+
+    if (missingEnv.length) {
+        throw new Error(
+            `Variáveis de ambiente do Foundry ausentes: ${missingEnv.join(', ')}`
+        );
+    }
+
+    const credential = new ClientSecretCredential(
+        process.env.AZURE_TENANT_ID,
+        process.env.AZURE_CLIENT_ID,
+        process.env.AZURE_CLIENT_SECRET
+    );
+
+    const project = new AIProjectClient(
+        process.env.FOUNDRY_PROJECT_ENDPOINT,
+        credential
+    );
+
+    openai = project.getOpenAIClient();
+    return openai;
+}
 
 const conversations = new Map();
 const CONVERSATION_TTL_MS = 30 * 60 * 1000;
@@ -43,6 +58,7 @@ function pruneExpiredConversations(now = Date.now()) {
 }
 
 async function chat(userId, message) {
+    const openaiClient = getOpenAIClient();
     const content = String(message || '').trim();
 
     if (!content) {
@@ -57,7 +73,7 @@ async function chat(userId, message) {
     let conversationId = conversations.get(userId)?.id;
 
     if (!conversationId) {
-        const conversation = await openai.conversations.create();
+        const conversation = await openaiClient.conversations.create();
 
         conversationId = conversation.id;
         conversations.set(userId, { id: conversationId, lastUsed: now });
@@ -65,7 +81,7 @@ async function chat(userId, message) {
         conversations.set(userId, { id: conversationId, lastUsed: now });
     }
 
-    const response = await openai.responses.create({
+    const response = await openaiClient.responses.create({
         conversation: conversationId,
         input: safeContent,
         agent_reference: {
