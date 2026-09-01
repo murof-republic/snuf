@@ -273,8 +273,12 @@ async function playNextRadio(channel) {
 	}
 }
 
-async function setRadio(radioName) {
+async function setRadio(radioName, userChannelId = null) {
 	if (!player || !connection || !started || !currentChannel) {
+		return false;
+	}
+
+	if (userChannelId && currentChannel.id !== userChannelId) {
 		return false;
 	}
 
@@ -394,14 +398,22 @@ async function updateVoiceStatus(channel, status) {
 	}
 }
 
-async function skipSong() {
+async function skipSong(userChannelId = null) {
 	if (!player || !started || changing) {
+		return false;
+	}
+
+	if (userChannelId && currentChannel && currentChannel.id !== userChannelId) {
 		return false;
 	}
 
 	player.stop();
 
 	return true;
+}
+
+function getCurrentChannelId() {
+	return currentChannel?.id ?? null;
 }
 
 function getRadios() {
@@ -412,5 +424,6 @@ module.exports = {
 	startRadio,
 	skipSong,
 	setRadio,
+	getCurrentChannelId,
 	getRadios
 };

@@ -1,8 +1,5 @@
-const {
-	SlashCommandBuilder,
-	MessageFlags
-} = require('discord.js');
-
+const { SlashCommandBuilder } = require('discord.js');
+const { requireGuild, requireInVoiceChannel, replyEphemeral } = require('../../utils/commandUtils');
 const radio = require('../../services/radio');
 
 module.exports = {
@@ -23,37 +20,18 @@ module.exports = {
 		),
 
 	async execute(interaction) {
-		if (
-			interaction.guildId !==
-			process.env.DISCORD_GUILD_ID
-		) {
-			return interaction.reply({
-				content:
-					'Esse comando só pode ser usado no servidor da rádio.',
-				flags: MessageFlags.Ephemeral
-			});
-		}
+		if (!requireGuild(interaction, process.env.DISCORD_GUILD_ID, 'Esse comando só pode ser usado no servidor da rádio.')) return;
 
-		const station =
-			interaction.options.getString(
-				'estacao',
-				true
-			);
+		const currentChannelId = radio.getCurrentChannelId();
+		if (!requireInVoiceChannel(interaction, currentChannelId, 'Você precisa estar em um canal de voz para usar a rádio.')) return;
 
-		const success =
-			await radio.setRadio(station);
+		const station = interaction.options.getString('estacao', true);
+		const success = await radio.setRadio(station, interaction.member.voice.channelId);
 
 		if (!success) {
-			return interaction.reply({
-				content:
-					'Não consegui mudar para essa estação.',
-				flags: MessageFlags.Ephemeral
-			});
+			return replyEphemeral(interaction, 'Não consegui mudar para essa estação.');
 		}
 
-		return interaction.reply({
-			content: `Estação alterada para **${station}**!`,
-			flags: MessageFlags.Ephemeral
-		});
+		return replyEphemeral(interaction, `Estação alterada para **${station}**!`);
 	}
 };

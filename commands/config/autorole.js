@@ -1,5 +1,6 @@
-const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const guilds = require('../../services/guilds');
+const { requireAdmin, replyEphemeral } = require('../../utils/commandUtils');
 
 module.exports = {
     cooldown: 5,
@@ -16,27 +17,22 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
-        if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-            return interaction.reply({
-                content: 'Você precisa ser administrador para usar este comando.',
-                flags: MessageFlags.Ephemeral
-            });
-        }
+        if (!requireAdmin(interaction)) return;
 
         const role = interaction.options.getRole('cargo', true);
 
         if (role.managed) {
-            return interaction.reply({
-                content: 'Esse cargo não pode ser atribuído pelo bot.',
-                flags: MessageFlags.Ephemeral,
-            });
+            return replyEphemeral(
+                interaction,
+                'Esse cargo não pode ser atribuído pelo bot.'
+            );
         }
 
         if (role.position >= interaction.guild.members.me.roles.highest.position) {
-            return interaction.reply({
-                content: 'Não consigo atribuir esse cargo porque ele está acima ou no mesmo nível do meu maior cargo.',
-                flags: MessageFlags.Ephemeral,
-            });
+            return replyEphemeral(
+                interaction,
+                'Não consigo atribuir esse cargo porque ele está acima ou no mesmo nível do meu maior cargo.'
+            );
         }
 
         await guilds.update(interaction.guild.id, {
@@ -46,9 +42,9 @@ module.exports = {
             },
         });
 
-        await interaction.reply({
-            content: `O cargo automático foi configurado como ${role}.`,
-            flags: MessageFlags.Ephemeral,
-        });
+        await replyEphemeral(
+            interaction,
+            `O cargo automático foi configurado como ${role}.`
+        );
     },
 };

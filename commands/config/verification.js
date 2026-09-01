@@ -1,4 +1,5 @@
-const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { requireAdmin, requireGuild, replyEphemeral } = require('../../utils/commandUtils');
 
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const VERIFY_ROLE_ID = process.env.VERIFY_ROLE_ID;
@@ -16,65 +17,34 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-            return interaction.reply({
-                content: 'Você precisa ser administrador para usar este comando.',
-                flags: MessageFlags.Ephemeral
-            });
-        }
-
-        if (interaction.guildId !== GUILD_ID) {
-            return interaction.reply({
-                content: 'Comando indisponível neste servidor.',
-                flags: MessageFlags.Ephemeral
-            });
-        }
+        if (!requireAdmin(interaction)) return;
+        if (!requireGuild(interaction, GUILD_ID)) return;
 
         const membro = interaction.options.getMember('user');
 
         if (!membro) {
-            return interaction.reply({
-                content: 'Não consegui encontrar esse membro.',
-                flags: MessageFlags.Ephemeral
-            });
+            return replyEphemeral(interaction, 'Não consegui encontrar esse membro.');
         }
 
         const role = interaction.guild.roles.cache.get(VERIFY_ROLE_ID);
 
         if (!role) {
-            return interaction.reply({
-                content: 'Cargo de verificado não encontrado.',
-                flags: MessageFlags.Ephemeral
-            });
+            return replyEphemeral(interaction, 'Cargo de verificado não encontrado.');
         }
 
         if (membro.roles.cache.has(VERIFY_ROLE_ID)) {
-            return interaction.reply({
-                content: 'Este membro já está verificado.',
-                flags: MessageFlags.Ephemeral
-            });
+            return replyEphemeral(interaction, 'Este membro já está verificado.');
         }
 
         try {
-            await membro.roles.add(
-                role,
-                'Verificação manual'
-            );
-
-            await interaction.reply({
-                content: `${membro} foi verificado.`,
-                flags: MessageFlags.Ephemeral
-            });
+            await membro.roles.add(role, 'Verificação manual');
+            return replyEphemeral(interaction, `${membro} foi verificado.`);
         } catch (error) {
-            console.error(
-                'Erro ao verificar membro:',
-                error
+            console.error('Erro ao verificar membro:', error);
+            return replyEphemeral(
+                interaction,
+                'Não consegui verificar esse membro. Verifique as permissões do bot e a posição do cargo.'
             );
-
-            await interaction.reply({
-                content: 'Não consegui verificar esse membro. Verifique as permissões do bot e a posição do cargo.',
-                flags: MessageFlags.Ephemeral
-            });
         }
     }
 };

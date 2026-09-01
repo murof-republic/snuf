@@ -19,6 +19,7 @@ const XP_PER_LEVEL = 1000;
 // Cache
 
 const users = new Map();
+const voiceUsers = new Set();
 
 
 // Funções
@@ -229,6 +230,7 @@ async function handleVoiceStateUpdate(oldState, newState) {
 	if (!user) return;
 
 	if (!oldState.channelId && newState.channelId) {
+		voiceUsers.add(userId);
 		user.voice = {
 			guildId,
 			channelId: newState.channelId,
@@ -243,6 +245,7 @@ async function handleVoiceStateUpdate(oldState, newState) {
 		newState.channelId &&
 		oldState.channelId !== newState.channelId
 	) {
+		voiceUsers.add(userId);
 		user.voice = {
 			guildId,
 			channelId: newState.channelId,
@@ -253,6 +256,7 @@ async function handleVoiceStateUpdate(oldState, newState) {
 	}
 
 	if (oldState.channelId && !newState.channelId) {
+		voiceUsers.delete(userId);
 		user.voice = null;
 
 		await saveUser(userId);
@@ -263,9 +267,12 @@ async function handleVoiceStateUpdate(oldState, newState) {
 // XP de voz
 
 async function processVoiceXP(client) {
-	for (const [userId, user] of users) {
-		if (!user.loaded) continue;
-		if (!user.voice) continue;
+	for (const userId of voiceUsers) {
+		const user = users.get(userId);
+		if (!user || !user.loaded || !user.voice) {
+			voiceUsers.delete(userId);
+			continue;
+		}
 
 		const guild = client.guilds.cache.get(
 			user.voice.guildId

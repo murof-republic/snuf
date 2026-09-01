@@ -1,5 +1,6 @@
-const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { getGuildsCollection } = require('../../services/firebase');
+const { requireAdmin, replyEphemeral } = require('../../utils/commandUtils');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -22,12 +23,7 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-            return interaction.reply({
-                content: 'Você precisa ser administrador para usar este comando.',
-                flags: MessageFlags.Ephemeral
-            });
-        }
+        if (!requireAdmin(interaction)) return;
 
         const channel = interaction.options.getChannel('canal', true);
         const server = interaction.options
@@ -44,20 +40,13 @@ module.exports = {
                 }
             }, { merge: true });
 
-            await interaction.reply({
-                content: `O dashboard do Minecraft será enviado em ${channel} para o servidor \`${server}\`.\n*Pode demorar até 5 minutos para o dashboard aparecer, tenha calma.*`,
-                flags: MessageFlags.Ephemeral
-            });
-        } catch (error) {
-            console.error(
-                'Erro ao configurar o dashboard do Minecraft:',
-                error
+            await replyEphemeral(
+                interaction,
+                `O dashboard do Minecraft será enviado em ${channel} para o servidor \`${server}\`.\n*Pode demorar até 5 minutos para o dashboard aparecer, tenha calma.*`
             );
-
-            await interaction.reply({
-                content: 'Não consegui salvar a configuração do dashboard.',
-                flags: MessageFlags.Ephemeral
-            });
+        } catch (error) {
+            console.error('Erro ao configurar o dashboard do Minecraft:', error);
+            await replyEphemeral(interaction, 'Não consegui salvar a configuração do dashboard.');
         }
     }
 };

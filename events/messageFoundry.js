@@ -1,6 +1,10 @@
 const { Events } = require('discord.js');
 const foundry = require('../services/foundry');
 
+const AI_RATE_LIMIT_MS = 8_000;
+const AI_MAX_CHARS = 500;
+const userCooldowns = new Map();
+
 module.exports = {
     name: Events.MessageCreate,
 
@@ -13,7 +17,6 @@ module.exports = {
         ) return;
 
         const match = message.content.match(/\bsnuf\b/i);
-
         const mentioned = message.mentions.has(message.client.user);
 
         let reply = false;
@@ -34,7 +37,17 @@ module.exports = {
             .replace(`<@!${message.client.user.id}>`, '')
             .trim();
 
-        if (!content) return;
+        if (!content || content.length > AI_MAX_CHARS) return;
+
+        const now = Date.now();
+        const lastCall = userCooldowns.get(message.author.id);
+
+        if (lastCall && now - lastCall < AI_RATE_LIMIT_MS) {
+            return;
+        }
+
+        userCooldowns.set(message.author.id, now);
+        setTimeout(() => userCooldowns.delete(message.author.id), AI_RATE_LIMIT_MS);
 
         try {
             await message.channel.sendTyping();
