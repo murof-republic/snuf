@@ -184,7 +184,7 @@ async function updateVoiceStatus(channel, status) {
 }
 
 async function startRadio(client, guildId = DEFAULT_GUILD_ID, channelId = DEFAULT_CHANNEL_ID) {
-	if (!client || !guildId || !channelId) {
+	if (!client || !guildId || guildId !== DEFAULT_GUILD_ID || !channelId) {
 		return false;
 	}
 
@@ -247,6 +247,10 @@ async function startRadio(client, guildId = DEFAULT_GUILD_ID, channelId = DEFAUL
 }
 
 async function setRadio(radioName, guildId = DEFAULT_GUILD_ID, userChannelId = null) {
+	if (!guildId || guildId !== DEFAULT_GUILD_ID) {
+		return false;
+	}
+
 	const state = getOrCreateState(guildId);
 	if (!state || !state.player || !state.connection || !state.started || !state.currentChannel) {
 		return false;
@@ -288,6 +292,10 @@ async function setRadio(radioName, guildId = DEFAULT_GUILD_ID, userChannelId = n
 }
 
 async function skipSong(guildId = DEFAULT_GUILD_ID, userChannelId = null) {
+	if (!guildId || guildId !== DEFAULT_GUILD_ID) {
+		return false;
+	}
+
 	const state = getOrCreateState(guildId);
 	if (!state || !state.player || !state.started || state.changing) {
 		return false;
@@ -302,6 +310,10 @@ async function skipSong(guildId = DEFAULT_GUILD_ID, userChannelId = null) {
 }
 
 function getCurrentChannelId(guildId = DEFAULT_GUILD_ID) {
+	if (!guildId || guildId !== DEFAULT_GUILD_ID) {
+		return null;
+	}
+
 	const state = getOrCreateState(guildId);
 	return state?.currentChannel?.id ?? null;
 }
@@ -311,6 +323,10 @@ function getRadios() {
 }
 
 function stopRadio(guildId = DEFAULT_GUILD_ID) {
+	if (!guildId || guildId !== DEFAULT_GUILD_ID) {
+		return false;
+	}
+
 	const state = getOrCreateState(guildId);
 	if (!state) {
 		return false;
