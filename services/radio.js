@@ -19,12 +19,14 @@ let connection = null;
 let player = null;
 let ffmpeg = null;
 let started = false;
-let restarting = false;
 
 async function startRadio(client) {
 	if (started) return;
 
 	if (!GUILD_ID || !CHANNEL_ID) {
+		console.error(
+			'[RADIO] DISCORD_GUILD_ID ou RADIO_CHANNEL_ID não configurado.'
+		);
 		return;
 	}
 
@@ -34,6 +36,7 @@ async function startRadio(client) {
 			.catch(() => null);
 
 		if (!guild) {
+			console.error('[RADIO] Servidor não encontrado.');
 			return;
 		}
 
@@ -42,6 +45,7 @@ async function startRadio(client) {
 			.catch(() => null);
 
 		if (!channel || !channel.isVoiceBased()) {
+			console.error('[RADIO] Canal de voz não encontrado.');
 			return;
 		}
 
@@ -62,30 +66,31 @@ async function startRadio(client) {
 		connection.on(
 			VoiceConnectionStatus.Disconnected,
 			() => {
+				console.error('[RADIO] Discord desconectou.');
 				stopFFmpeg();
 				started = false;
 			}
 		);
 
-		player.on(AudioPlayerStatus.Idle, () => {
-			if (!started || restarting) {
-				return;
+		player.on(
+			AudioPlayerStatus.Playing,
+			() => {
+				console.log('[RADIO] Player está tocando.');
 			}
+		);
 
-			restartRadio(channel);
-		});
+		player.on(
+			AudioPlayerStatus.Idle,
+			() => {
+				console.log('[RADIO] Player ficou parado.');
+			}
+		);
 
 		player.on('error', error => {
 			console.error(
-				'[RADIO] Player:',
-				error.message
+				'[RADIO] Erro do player:',
+				error
 			);
-
-			if (!started || restarting) {
-				return;
-			}
-
-			restartRadio(channel);
 		});
 
 		await waitForConnection();
@@ -97,7 +102,7 @@ async function startRadio(client) {
 	} catch (error) {
 		console.error(
 			'[RADIO] Erro ao iniciar:',
-			error.message
+			error
 		);
 
 		started = false;
@@ -184,13 +189,13 @@ async function playRadio(channel) {
 
 	console.log('[RADIO] Iniciando stream');
 
-	const processRef = spawn(
+	ffmpeg = spawn(
 		'ffmpeg',
 		[
 			'-hide_banner',
 
 			'-loglevel',
-			'error',
+			'verbose',
 
 			'-reconnect',
 			'1',
@@ -226,18 +231,21 @@ async function playRadio(channel) {
 		}
 	);
 
-	ffmpeg = processRef;
+	const processRef = ffmpeg;
 
 	let receivedAudio = false;
 
 	processRef.on('spawn', () => {
-		console.log('[RADIO] FFmpeg iniciado');
+		console.log('[RADIO] FFmpeg iniciado.');
 	});
 
 	processRef.stdout.on('data', data => {
 		if (!receivedAudio) {
 			receivedAudio = true;
-			console.log('[RADIO] Áudio recebido');
+
+			console.log(
+				`[RADIO] Áudio recebido (${data.length} bytes).`
+			);
 		}
 	});
 
@@ -248,16 +256,15 @@ async function playRadio(channel) {
 
 		if (message) {
 			console.error(
-				'[RADIO] FFmpeg:',
-				message
+				`[RADIO] FFmpeg: ${message}`
 			);
 		}
 	});
 
 	processRef.on('error', error => {
 		console.error(
-			'[RADIO] FFmpeg:',
-			error.message
+			'[RADIO] Erro ao executar FFmpeg:',
+			error
 		);
 
 		if (ffmpeg === processRef) {
@@ -265,26 +272,13 @@ async function playRadio(channel) {
 		}
 	});
 
-	processRef.on('close', code => {
+	processRef.on('close', (code, signal) => {
+		console.error(
+			`[RADIO] FFmpeg encerrou. Código: ${code} | Sinal: ${signal} | Áudio recebido: ${receivedAudio}`
+		);
+
 		if (ffmpeg === processRef) {
 			ffmpeg = null;
-		}
-
-		if (
-			code !== 0 &&
-			started &&
-			!restarting
-		) {
-			console.error(
-				`[RADIO] FFmpeg encerrou com código ${code}`
-			);
-
-			setTimeout(() => {
-				if (started) {
-					playRadio(channel)
-						.catch(() => {});
-				}
-			}, 10000);
 		}
 	});
 
@@ -315,27 +309,6 @@ function stopFFmpeg() {
 	}
 
 	ffmpeg = null;
-}
-
-function restartRadio(channel) {
-	if (restarting) {
-		return;
-	}
-
-	restarting = true;
-
-	stopFFmpeg();
-
-	setTimeout(async () => {
-		try {
-			if (started) {
-				await playRadio(channel);
-			}
-		} catch {
-		} finally {
-			restarting = false;
-		}
-	}, 5000);
 }
 
 async function updateVoiceStatus(channel, status) {
