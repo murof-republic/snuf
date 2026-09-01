@@ -89,6 +89,7 @@ let stream = null;
 let started = false;
 let changing = false;
 let currentRadio = null;
+let currentChannel = null;
 
 async function startRadio(client) {
 	if (started) return;
@@ -113,6 +114,8 @@ async function startRadio(client) {
 		if (!channel || !channel.isVoiceBased()) {
 			return;
 		}
+
+		currentChannel = channel;
 
 		connection = joinVoiceChannel({
 			channelId: channel.id,
@@ -270,6 +273,55 @@ async function playNextRadio(channel) {
 	}
 }
 
+async function setRadio(radioName) {
+	if (!player || !connection || !started || !currentChannel) {
+		return false;
+	}
+
+	if (changing) {
+		return false;
+	}
+
+	const radio = radios.find(
+		radio =>
+			radio.name.toLowerCase() ===
+			radioName.toLowerCase()
+	);
+
+	if (!radio) {
+		return false;
+	}
+
+	if (currentRadio === radio) {
+		return true;
+	}
+
+	changing = true;
+
+	try {
+		stopStream();
+
+		const success = await playRadio(
+			currentChannel,
+			radio
+		);
+
+		if (!success) {
+			return false;
+		}
+
+		currentRadio = radio;
+
+		return true;
+
+	} catch {
+		return false;
+
+	} finally {
+		changing = false;
+	}
+}
+
 function playRadio(channel, radio) {
 	return new Promise((resolve, reject) => {
 		const request = https.get(
@@ -277,11 +329,13 @@ function playRadio(channel, radio) {
 			response => {
 				if (response.statusCode !== 200) {
 					response.resume();
+
 					reject(
 						new Error(
 							`HTTP ${response.statusCode}`
 						)
 					);
+
 					return;
 				}
 
@@ -350,7 +404,13 @@ async function skipSong() {
 	return true;
 }
 
+function getRadios() {
+	return radios;
+}
+
 module.exports = {
 	startRadio,
-	skipSong
+	skipSong,
+	setRadio,
+	getRadios
 };
