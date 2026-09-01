@@ -1,4 +1,4 @@
-const { spawn } = require('node:child_process');
+onst { spawn } = require('node:child_process');
 
 const {
 	joinVoiceChannel,
