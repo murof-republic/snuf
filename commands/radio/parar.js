@@ -10,7 +10,7 @@ module.exports = {
 	async execute(interaction) {
 		if (!requireGuild(interaction, process.env.DISCORD_GUILD_ID, 'Esse comando só pode ser usado no servidor principal.')) return;
 
-		const success = radio.stopRadio();
+		const success = radio.stopRadio(interaction.guildId);
 
 		if (!success) {
 			return replyEphemeral(interaction, 'A rádio não está ativa.');

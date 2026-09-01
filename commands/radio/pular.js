@@ -10,10 +10,10 @@ module.exports = {
 	async execute(interaction) {
 		if (!requireGuild(interaction, process.env.DISCORD_GUILD_ID, 'Esse comando só pode ser usado no servidor da rádio.')) return;
 
-		const currentChannelId = radio.getCurrentChannelId();
+		const currentChannelId = radio.getCurrentChannelId(interaction.guildId);
 		if (!requireInVoiceChannel(interaction, currentChannelId, 'Você precisa estar em um canal de voz para usar a rádio.')) return;
 
-		const skipped = await radio.skipSong(interaction.member.voice.channelId);
+		const skipped = await radio.skipSong(interaction.guildId, interaction.member.voice.channelId);
 
 		if (!skipped) {
 			return replyEphemeral(interaction, 'A rádio não está tocando no momento.');

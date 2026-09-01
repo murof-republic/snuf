@@ -13,7 +13,7 @@ module.exports = {
 		await interaction.deferReply({ ephemeral: true });
 
 		try {
-			await radio.startRadio(interaction.client);
+			await radio.startRadio(interaction.client, interaction.guildId, process.env.RADIO_CHANNEL_ID);
 			return interaction.editReply('Rádio iniciada com sucesso!');
 		} catch (error) {
 			console.error('[RADIO] Erro ao iniciar:', error);
