@@ -32,6 +32,54 @@ const radios = [
 	{
 		name: 'R2p',
 		url: 'https://icecast.err.ee/r2p.opus'
+	},
+	{
+		name: 'R2 Music',
+		url: 'https://icecast.err.ee/r2music.opus'
+	},
+	{
+		name: 'Klara Jazz',
+		url: 'https://icecast.err.ee/klarajazz.opus'
+	},
+	{
+		name: 'Klara Klassika',
+		url: 'https://icecast.err.ee/klaraklassika.opus'
+	},
+	{
+		name: 'Raadio Tallinn',
+		url: 'https://icecast.err.ee/raadiotallinn.opus'
+	},
+	{
+		name: 'Klara Nostalgia',
+		url: 'https://icecast.err.ee/klaranostalgia.opus'
+	},
+	{
+		name: 'Klassikaraadio',
+		url: 'https://icecast.err.ee/klassikaraadio.opus'
+	},
+	{
+		name: 'Raadio 4',
+		url: 'https://icecast.err.ee/r4.opus'
+	},
+	{
+		name: 'Vikerraadio',
+		url: 'https://icecast.err.ee/vikerraadio.opus'
+	},
+	{
+		name: 'RadioSEGA',
+		url: 'https://icecast.radiosega.net/rs-opus.ogg'
+	},
+	{
+		name: 'Dance Wave!',
+		url: 'http://stream4.dancewave.online:8080/dance.opus'
+	},
+	{
+		name: 'Dance Wave Retro!',
+		url: 'http://stream4.dancewave.online:8080/retrodance.opus'
+	},
+	{
+		name: 'Le Son Parisien',
+		url: 'https://stream.lesonparisien.com/hi'
 	}
 ];
 
