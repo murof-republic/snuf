@@ -12,10 +12,12 @@ function requireAdmin(interaction) {
         return true;
     }
 
-    return replyEphemeral(
+    replyEphemeral(
         interaction,
         'Você precisa ser administrador para usar este comando.'
-    );
+    ).catch(() => {});
+
+    return false;
 }
 
 function requireGuild(interaction, guildId, message = 'Comando indisponível neste servidor.') {
@@ -23,21 +25,25 @@ function requireGuild(interaction, guildId, message = 'Comando indisponível nes
         return true;
     }
 
-    return replyEphemeral(interaction, message);
+    replyEphemeral(interaction, message).catch(() => {});
+
+    return false;
 }
 
 function requireInVoiceChannel(interaction, channelId = null, message = 'Você precisa estar em um canal de voz para usar este comando.') {
     const memberChannelId = interaction.member?.voice?.channelId;
 
     if (!memberChannelId) {
-        return replyEphemeral(interaction, message);
+        replyEphemeral(interaction, message).catch(() => {});
+        return false;
     }
 
     if (channelId && memberChannelId !== channelId) {
-        return replyEphemeral(
+        replyEphemeral(
             interaction,
             'Você precisa estar no canal de voz da rádio para usar este comando.'
-        );
+        ).catch(() => {});
+        return false;
     }
 
     return true;
