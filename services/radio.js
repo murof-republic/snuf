@@ -14,133 +14,64 @@ const CHANNEL_ID = process.env.RADIO_CHANNEL_ID;
 
 const radios = [
 	{
-		name: 'Lofi Hip Hop',
-		url: 'https://stream.openmusic.fm/lofi'
-	},
-	{
-		name: 'Chill Beats',
-		url: 'https://stream.openmusic.fm/chill'
-	},
-	{
-		name: 'Deep House',
-		url: 'https://stream.openmusic.fm/deephouse'
-	},
-	{
-		name: 'Synthwave',
-		url: 'https://stream.openmusic.fm/synthwave'
-	},
-	{
-		name: 'Lo-Fi Beats',
-		url: 'https://stream.openmusic.fm/lofibeats'
-	},
-	{
-		name: 'Jazz',
-		url: 'https://stream.openmusic.fm/jazz'
-	},
-	{
-		name: 'Classical',
-		url: 'https://stream.openmusic.fm/classical'
-	},
-	{
-		name: 'Piano',
-		url: 'https://stream.openmusic.fm/piano'
-	},
-	{
-		name: 'Ambient',
-		url: 'https://stream.openmusic.fm/ambient'
-	},
-	{
-		name: 'Study Music',
-		url: 'https://stream.openmusic.fm/studymusic'
-	},
-	{
-		name: 'Chillwave',
-		url: 'https://stream.openmusic.fm/chillwave'
-	},
-	{
-		name: 'Indie',
-		url: 'https://stream.openmusic.fm/indie'
-	},
-	{
-		name: 'Electronic',
-		url: 'https://stream.openmusic.fm/electronic'
-	},
-	{
-		name: 'Vaporwave',
-		url: 'https://stream.openmusic.fm/vaporwave'
-	},
-	{
-		name: 'Cyberpunk',
-		url: 'https://stream.openmusic.fm/cyberpunk'
-	},
-
-	{
 		name: 'R2 Chill',
+		aliases: ['r2 chill', 'chill'],
 		url: 'https://icecast.err.ee/r2chill.opus'
 	},
 	{
 		name: 'R2 Pop',
+		aliases: ['r2 pop', 'pop'],
 		url: 'https://icecast.err.ee/r2pop.opus'
 	},
 	{
 		name: 'R2 Rock',
+		aliases: ['r2 rock', 'rock'],
 		url: 'https://icecast.err.ee/r2rock.opus'
 	},
 	{
 		name: 'R2 Alternatiiv',
+		aliases: ['r2 alternatiiv', 'alternatiiv'],
 		url: 'https://icecast.err.ee/r2alternatiiv.opus'
 	},
 	{
 		name: 'R2p',
+		aliases: ['r2p', 'r2 p'],
 		url: 'https://icecast.err.ee/r2p.opus'
 	},
 	{
 		name: 'R2 Music',
+		aliases: ['r2 music', 'music'],
 		url: 'https://icecast.err.ee/r2music.opus'
 	},
 	{
 		name: 'Klara Jazz',
+		aliases: ['klara jazz', 'jazz'],
 		url: 'https://icecast.err.ee/klarajazz.opus'
 	},
 	{
 		name: 'Klara Klassika',
+		aliases: ['klara klassika', 'klassika'],
 		url: 'https://icecast.err.ee/klaraklassika.opus'
 	},
 	{
 		name: 'Raadio Tallinn',
+		aliases: ['raadio tallinn', 'tallinn'],
 		url: 'https://icecast.err.ee/raadiotallinn.opus'
 	},
 	{
 		name: 'Klara Nostalgia',
+		aliases: ['klara nostalgia', 'nostalgia'],
 		url: 'https://icecast.err.ee/klaranostalgia.opus'
 	},
 	{
 		name: 'Klassikaraadio',
+		aliases: ['klassikaraadio', 'klassika radio'],
 		url: 'https://icecast.err.ee/klassikaraadio.opus'
 	},
 	{
-		name: 'Raadio 4',
-		url: 'https://icecast.err.ee/r4.opus'
-	},
-	{
 		name: 'Vikerraadio',
+		aliases: ['vikerraadio', 'viker'],
 		url: 'https://icecast.err.ee/vikerraadio.opus'
-	},
-	{
-		name: 'RadioSEGA',
-		url: 'https://icecast.radiosega.net/rs-opus.ogg'
-	},
-	{
-		name: 'Dance Wave!',
-		url: 'http://stream4.dancewave.online:8080/dance.opus'
-	},
-	{
-		name: 'Dance Wave Retro!',
-		url: 'http://stream4.dancewave.online:8080/retrodance.opus'
-	},
-	{
-		name: 'Le Son Parisien',
-		url: 'https://stream.lesonparisien.com/hi'
 	}
 ];
 
@@ -332,6 +263,15 @@ async function playNextRadio(channel) {
 	}
 }
 
+function normalizeRadioName(value) {
+	return String(value || '')
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/\s+/g, ' ')
+		.trim();
+}
+
 async function setRadio(radioName, userChannelId = null) {
 	if (!player || !connection || !started || !currentChannel) {
 		return false;
@@ -345,11 +285,11 @@ async function setRadio(radioName, userChannelId = null) {
 		return false;
 	}
 
-	const radio = radios.find(
-		radio =>
-			radio.name.toLowerCase() ===
-			radioName.toLowerCase()
-	);
+	const normalizedInput = normalizeRadioName(radioName);
+	const radio = radios.find(radio => {
+		const names = [radio.name, ...(radio.aliases || [])];
+		return names.some(name => normalizeRadioName(name) === normalizedInput);
+	});
 
 	if (!radio) {
 		return false;
