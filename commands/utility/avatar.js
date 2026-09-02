@@ -13,18 +13,22 @@ module.exports = {
 
 	async execute(interaction) {
 		const target = interaction.options.getUser('user') || interaction.user;
-		const avatar = target.displayAvatarURL({
-			size: 1024,
-			extension: 'png'
-		});
+		const member = interaction.guild?.members.cache.get(target.id);
 
-		const isGif = target.avatar && target.avatar.startsWith('a_');
-		const avatarUrl = isGif
-			? target.displayAvatarURL({ size: 1024, extension: 'gif' })
-			: avatar;
+		const isGif = member?.avatar?.startsWith('a_') || target.avatar?.startsWith('a_');
+
+		const avatarUrl = member
+			? member.displayAvatarURL({
+				size: 1024,
+				extension: isGif ? 'gif' : 'png'
+			})
+			: target.displayAvatarURL({
+				size: 1024,
+				extension: isGif ? 'gif' : 'png'
+			});
+
 		const format = isGif ? 'GIF' : 'PNG';
-
-		const memberName = interaction.guild?.members.cache.get(target.id)?.displayName || target.username;
+		const memberName = member?.displayName || target.username;
 
 		const embed = new EmbedBuilder()
 			.setTitle(`Avatar de ${memberName}`)
