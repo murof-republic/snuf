@@ -57,6 +57,10 @@ module.exports = {
 	},
 
 	async execute(interaction) {
+		await interaction.deferReply({
+			flags: MessageFlags.Ephemeral
+		});
+
 		const colorName = interaction.options.getString('cor', true);
 
 		const color = colors.find(
@@ -65,9 +69,8 @@ module.exports = {
 		);
 
 		if (!color) {
-			return interaction.reply({
+			return interaction.editReply({
 				content: 'Essa cor não está disponível.',
-				flags: MessageFlags.Ephemeral
 			});
 		}
 
@@ -106,19 +109,15 @@ module.exports = {
 
 			await member.roles.add(role);
 
-			await interaction.reply({
-				content: 'Prontinho! Sua cor foi alterada.',
-				flags: MessageFlags.Ephemeral
-			});
+			await interaction.editReply('Prontinho! Sua cor foi alterada.');
 
 		} catch (error) {
 			console.error('Erro ao alterar cor:', error);
 
-			if (!interaction.replied && !interaction.deferred) {
-				await interaction.reply({
-					content: 'Não consegui alterar sua cor. Verifique as permissões do bot.',
-					flags: MessageFlags.Ephemeral
-				});
+			if (interaction.deferred || interaction.replied) {
+				await interaction.editReply(
+					'Não consegui alterar sua cor. Verifique as permissões do bot.'
+				);
 			}
 		}
 	}
