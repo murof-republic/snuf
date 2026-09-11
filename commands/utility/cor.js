@@ -11,7 +11,11 @@ async function moveColorRolesToBottom(guild) {
 		.sort((firstRole, secondRole) => secondRole.position - firstRole.position);
 
 	for (const role of colorRoles.values()) {
-		await role.setPosition(1, 'Manter cargos de cor no final da lista');
+		try {
+			await role.setPosition(1, 'Manter cargos de cor no final da lista');
+		} catch (error) {
+			console.error(`Não foi possível mover o cargo de cor ${role.name}:`, error.message);
+		}
 	}
 }
 
