@@ -31,10 +31,10 @@ module.exports = {
 		logger.info('READY', `Conectado como ${client.user.tag}`);
 
 		try {
-
-
 			const updatePresence = () => {
-				const text = PRESENCE_TEXTS[presenceIndex % PRESENCE_TEXTS.length];
+				const text =
+					PRESENCE_TEXTS[presenceIndex % PRESENCE_TEXTS.length];
+
 				presenceIndex++;
 
 				try {
@@ -48,34 +48,45 @@ module.exports = {
 						]
 					});
 				} catch (error) {
-					logger.error('READY', 'Erro ao atualizar presence', error);
+					logger.error(
+						'READY',
+						`Erro ao atualizar presence: ${error.message}`
+					);
 				}
 			};
 
 			updatePresence();
-
 			setInterval(updatePresence, PRESENCE_UPDATE_INTERVAL);
 
-			logger.info('READY', 'Status de presença atualizado');
-
-
+			logger.info('READY', '├─ Status de presença atualizado');
 
 			try {
 				startMinecraftDashboard(client);
-				logger.info('READY', 'Dashboard Minecraft iniciado');
+				logger.info('READY', '├─ Dashboard Minecraft iniciado');
 			} catch (error) {
-				logger.error('READY', 'Erro ao iniciar Dashboard Minecraft', error);
+				logger.error(
+					'READY',
+					`├─ Erro no Dashboard Minecraft: ${error.message}`
+				);
 			}
 
 			try {
 				startVoiceXP(client);
-				logger.info('READY', 'Sistema de XP iniciado');
+				logger.info('READY', '├─ Sistema de XP iniciado');
 			} catch (error) {
-				logger.error('READY', 'Erro ao iniciar XP', error);
+				logger.error(
+					'READY',
+					`└─ Erro no sistema de XP: ${error.message}`
+				);
 			}
 
+			logger.info('READY', '└─ Inicialização concluída');
+
 		} catch (error) {
-			logger.error('READY', 'Erro geral na inicialização', error);
+			logger.error(
+				'READY',
+				`└─ Erro geral na inicialização: ${error.message}`
+			);
 		}
 	}
 };
