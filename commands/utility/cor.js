@@ -1,24 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const colors = require('../../services/colors');
 
-async function moveColorRolesToBottom(guild) {
-	const colorNames = new Set(
-		colors.map(color => color.name.toLowerCase())
-	);
-
-	const colorRoles = guild.roles.cache
-		.filter(role => colorNames.has(role.name.toLowerCase()) && role.editable)
-		.sort((firstRole, secondRole) => secondRole.position - firstRole.position);
-
-	for (const role of colorRoles.values()) {
-		try {
-			await role.setPosition(1, 'Manter cargos de cor no final da lista');
-		} catch (error) {
-			console.error(`Não foi possível mover o cargo de cor ${role.name}:`, error.message);
-		}
-	}
-}
-
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('cor')
@@ -57,10 +39,6 @@ module.exports = {
 	},
 
 	async execute(interaction) {
-		await interaction.deferReply({
-			flags: MessageFlags.Ephemeral
-		});
-
 		const colorName = interaction.options.getString('cor', true);
 
 		const color = colors.find(
@@ -69,8 +47,9 @@ module.exports = {
 		);
 
 		if (!color) {
-			return interaction.editReply({
+			return interaction.reply({
 				content: 'Essa cor não está disponível.',
+				flags: MessageFlags.Ephemeral
 			});
 		}
 
@@ -105,19 +84,21 @@ module.exports = {
 				});
 			}
 
-			await moveColorRolesToBottom(guild);
-
 			await member.roles.add(role);
 
-			await interaction.editReply('Prontinho! Sua cor foi alterada.');
+			await interaction.reply({
+				content: 'Prontinho! Sua cor foi alterada.',
+				flags: MessageFlags.Ephemeral
+			});
 
 		} catch (error) {
 			console.error('Erro ao alterar cor:', error);
 
-			if (interaction.deferred || interaction.replied) {
-				await interaction.editReply(
-					'Não consegui alterar sua cor. Verifique as permissões do bot.'
-				);
+			if (!interaction.replied && !interaction.deferred) {
+				await interaction.reply({
+					content: 'Não consegui alterar sua cor. Verifique as permissões do bot.',
+					flags: MessageFlags.Ephemeral
+				});
 			}
 		}
 	}
