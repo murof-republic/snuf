@@ -3,7 +3,7 @@ const { Events } = require('discord.js');
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const VERIFY_ROLE_ID = process.env.VERIFY_ROLE_ID;
 
-const NEEDED_MESSAGES = 15;
+const NEEDED_MESSAGES = 30;
 const TTL_MS = 48 * 60 * 60 * 1000;
 
 const state = new Map();

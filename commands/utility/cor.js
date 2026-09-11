@@ -1,6 +1,20 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const colors = require('../../services/colors');
 
+async function moveColorRolesToBottom(guild) {
+	const colorNames = new Set(
+		colors.map(color => color.name.toLowerCase())
+	);
+
+	const colorRoles = guild.roles.cache
+		.filter(role => colorNames.has(role.name.toLowerCase()) && role.editable)
+		.sort((firstRole, secondRole) => secondRole.position - firstRole.position);
+
+	for (const role of colorRoles.values()) {
+		await role.setPosition(1, 'Manter cargos de cor no final da lista');
+	}
+}
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('cor')
@@ -83,6 +97,8 @@ module.exports = {
 					reason: 'Cargo de cor do usuário'
 				});
 			}
+
+			await moveColorRolesToBottom(guild);
 
 			await member.roles.add(role);
 
