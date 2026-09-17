@@ -4,7 +4,10 @@ const { getFirestore } = require('firebase-admin/firestore');
 const requiredEnv = [
 	'FIREBASE_PROJECT_ID',
 	'FIREBASE_CLIENT_EMAIL',
-	'FIREBASE_PRIVATE_KEY'
+	'FIREBASE_PRIVATE_KEY',
+	'MUROF_FIREBASE_PROJECT_ID',
+	'MUROF_FIREBASE_CLIENT_EMAIL',
+	'MUROF_FIREBASE_PRIVATE_KEY'
 ];
 
 const missingEnv = requiredEnv.filter(key => !process.env[key]);
@@ -21,17 +24,41 @@ const serviceAccount = {
 	privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
 };
 
+let snufApp;
+
 try {
-	initializeApp({
+	snufApp = initializeApp({
 		credential: cert(serviceAccount),
-	});
-	console.log('[FIREBASE] Inicializado com sucesso');
+	}, 'snuf');
+
+	console.log('[FIREBASE] Snuf inicializado com sucesso');
 } catch (error) {
-	console.error('[FIREBASE] Erro ao inicializar:', error.message);
+	console.error('[FIREBASE] Erro ao inicializar Snuf:', error.message);
 	throw error;
 }
 
-const db = getFirestore();
+const db = getFirestore(snufApp);
+
+const murofServiceAccount = {
+	projectId: process.env.MUROF_FIREBASE_PROJECT_ID,
+	clientEmail: process.env.MUROF_FIREBASE_CLIENT_EMAIL,
+	privateKey: process.env.MUROF_FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+};
+
+let murofApp;
+
+try {
+	murofApp = initializeApp({
+		credential: cert(murofServiceAccount),
+	}, 'murof');
+
+	console.log('[FIREBASE] Murof inicializado com sucesso');
+} catch (error) {
+	console.error('[FIREBASE] Erro ao inicializar Murof:', error.message);
+	throw error;
+}
+
+const murofDb = getFirestore(murofApp);
 
 async function connect() {
 	try {
@@ -63,6 +90,7 @@ function getProfilesCollection() {
 
 module.exports = {
 	db,
+	murofDb,
 	connect,
 	getGuildsCollection,
 	getMembersCollection,
