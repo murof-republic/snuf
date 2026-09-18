@@ -145,5 +145,6 @@ vite.config.ts.timestamp-*
 .idea/
 .vscode/
 test/
+maintenance/
 config.json
 serviceAccountKey.json
