@@ -21,7 +21,7 @@ module.exports = {
         .addBooleanOption(option =>
             option
                 .setName('artista')
-                .setDescription('Define se o user e artista.')
+                .setDescription('Define se o user é artista.')
                 .setRequired(true)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
@@ -44,6 +44,13 @@ module.exports = {
         const user = interaction.options.getUser('user');
         const descrição = interaction.options.getString('descrição');
         const artista = interaction.options.getBoolean('artista');
+
+        const nome = user.displayName
+            .replace(/[^\p{L}\s]/gu, '')
+            .trim()
+            .split(/\s+/)
+            .slice(0, 2)
+            .join(' ');
 
         await interaction.deferReply({
             flags: MessageFlags.Ephemeral
@@ -79,7 +86,7 @@ module.exports = {
         const existente = await ref.get();
 
         await ref.set({
-            nome: user.displayName,
+            nome,
             descrição,
             artista,
             avatar: url

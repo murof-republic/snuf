@@ -22,7 +22,14 @@ module.exports = {
             const atualizacoes = {};
 
             if (oldUser.displayName !== newUser.displayName) {
-                atualizacoes.nome = newUser.displayName;
+                const nome = newUser.displayName
+                    .replace(/[^\p{L}\s]/gu, '')
+                    .trim()
+                    .split(/\s+/)
+                    .slice(0, 2)
+                    .join(' ');
+
+                atualizacoes.nome = nome;
             }
 
             if (oldUser.avatar !== newUser.avatar) {

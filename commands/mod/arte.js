@@ -52,6 +52,13 @@ module.exports = {
         const autor = interaction.options.getUser('autor');
         const id = interaction.options.getString('id');
 
+        const nomeAutor = autor.displayName
+            .replace(/[^\p{L}\s]/gu, '')
+            .trim()
+            .split(/\s+/)
+            .slice(0, 2)
+            .join(' ');
+
         await interaction.deferReply({
             flags: MessageFlags.Ephemeral
         });
@@ -127,7 +134,7 @@ module.exports = {
             .doc()
             .set({
                 nome,
-                autor: autor.displayName,
+                autor: nomeAutor,
                 id_autor: autor.id,
                 url
             });
