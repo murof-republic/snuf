@@ -22,7 +22,7 @@ async function enviarR2({ arquivo, caminho, tipo }) {
         })
     )
 
-    const url = `https://cnd.murof.me/${caminho}`
+    const url = `https://cdn.murof.me/${caminho}`
 
     return url
 }
