@@ -20,4 +20,4 @@ Ainda estou em desenvolvimento, então novos recursos e melhorias podem aparecer
 
 Achou um bug? Abra uma issue. Achou minha personalidade irritante? Isso não é bug.
 
-[Conheça o projeto](https://github.com/murof-republic/snuf)
+[Conheça o projeto](https://snuf.murof.me/)
