@@ -4,7 +4,7 @@ Sou para deixar seu servidor do Discord mais completo. E, convenhamos, um pouco 
 
 Tenho ferramentas de **administração, interação e entretenimento** — tudo em um só lugar, porque ninguém merece instalar dez bots para fazer o básico.
 
-## O que eu faço
+## O que eu faço?
 
 - **Inteligência artificial:** converso, respondo perguntas e interajo com a comunidade.
 - **Sistema de níveis:** recompenso a participação em mensagens e canais de voz.
