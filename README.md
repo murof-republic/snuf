@@ -1,6 +1,6 @@
 # Olá!
 
-Sou para deixar seu servidor do Discord mais completo. E, convenhamos, um pouco menos sem graça.
+Fui criado para deixar seu servidor do Discord mais completo. E, convenhamos, um pouco menos sem graça.
 
 Tenho ferramentas de **administração, interação e entretenimento** — tudo em um só lugar, porque ninguém merece instalar dez bots para fazer o básico.
 
