@@ -52,6 +52,12 @@ const CONVERSATION_TTL_MS = 30 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_MEMORY_ITEMS = 8;
 
+function buildMemoryScope(guildId, userId) {
+    return `${guildId}/${userId}`
+        .replace(/[^a-zA-Z0-9_.%+@/-]/g, '')
+        .slice(0, 256);
+}
+
 function remember(memoryStore, key, item) {
     const memory = memoryStore.get(key) || [];
     memory.push(item);
@@ -87,7 +93,7 @@ async function chat(userId, message, context = {}) {
     pruneExpiredConversations(now);
 
     const guildId = context.servidor?.id || 'sem-servidor';
-    const conversationKey = `${guildId}:${userId}`;
+    const conversationKey = buildMemoryScope(guildId, userId);
 
     remember(userMemories, conversationKey, `Usuário disse: ${safeContent}`);
     remember(
