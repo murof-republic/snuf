@@ -1,5 +1,6 @@
 const { Events } = require('discord.js');
 const foundry = require('../services/foundry');
+const { buildAiContext } = require('../services/aiContext');
 
 const AI_RATE_LIMIT_MS = 8_000;
 const AI_MAX_CHARS = 500;
@@ -54,7 +55,13 @@ module.exports = {
 
             const response = await foundry.chat(
                 message.author.id,
-                content
+                content,
+                buildAiContext({
+                    guild: message.guild,
+                    channel: message.channel,
+                    member: message.member,
+                    client: message.client
+                })
             );
 
             await message.reply(response);

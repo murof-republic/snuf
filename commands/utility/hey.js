@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { chat } = require('../../services/foundry');
+const { buildAiContext } = require('../../services/aiContext');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -27,7 +28,13 @@ module.exports = {
         try {
             const resposta = await chat(
                 interaction.user.id,
-                mensagem
+                mensagem,
+                buildAiContext({
+                    guild: interaction.guild,
+                    channel: interaction.channel,
+                    member: interaction.member,
+                    client: interaction.client
+                })
             );
 
             await interaction.editReply(

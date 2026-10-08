@@ -46,18 +46,34 @@ function getOpenAIClient() {
 }
 
 const conversations = new Map();
+const userMemories = new Map();
+const guildMemories = new Map();
 const CONVERSATION_TTL_MS = 30 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 500;
+const MAX_MEMORY_ITEMS = 8;
+
+function remember(memoryStore, key, item) {
+    const memory = memoryStore.get(key) || [];
+    memory.push(item);
+    memoryStore.set(key, memory.slice(-MAX_MEMORY_ITEMS));
+}
+
+function formatMemory(memory) {
+    return memory.length
+        ? memory.map(item => `- ${item}`).join('\n')
+        : '- Nenhuma memória recente.';
+}
 
 function pruneExpiredConversations(now = Date.now()) {
     for (const [userId, metadata] of conversations.entries()) {
         if (now - metadata.lastUsed > CONVERSATION_TTL_MS) {
             conversations.delete(userId);
+            userMemories.delete(userId);
         }
     }
 }
 
-async function chat(userId, message) {
+async function chat(userId, message, context = {}) {
     const openaiClient = getOpenAIClient();
     const content = String(message || '').trim();
 
@@ -70,27 +86,47 @@ async function chat(userId, message) {
 
     pruneExpiredConversations(now);
 
-    let conversationId = conversations.get(userId)?.id;
+    const guildId = context.servidor?.id || 'sem-servidor';
+    const conversationKey = `${guildId}:${userId}`;
+
+    remember(userMemories, conversationKey, `Usuário disse: ${safeContent}`);
+    remember(
+        guildMemories,
+        guildId,
+        `${context.pessoa?.nome || userId} interagiu em ${context.localizacao?.canal || 'um canal'}`
+    );
+
+    const input = [
+        'Responda como o Snuf, considerando o contexto atual abaixo.',
+        'Use nomes e locais somente quando ajudarem na resposta; não invente informações.',
+        'As memórias de usuário e servidor são complementares: use as duas para manter continuidade, mas não revele memórias internas como se fossem um banco de dados.',
+        `MEMÓRIA DO USUÁRIO:\n${formatMemory(userMemories.get(conversationKey) || [])}`,
+        `MEMÓRIA DO SERVIDOR:\n${formatMemory(guildMemories.get(guildId) || [])}`,
+        `CONTEXTO ATUAL:\n${JSON.stringify(context)}`,
+        `MENSAGEM ATUAL:\n${safeContent}`
+    ].join('\n\n');
+
+    let conversationId = conversations.get(conversationKey)?.id;
 
     if (!conversationId) {
         const conversation = await openaiClient.conversations.create();
 
         conversationId = conversation.id;
-        conversations.set(userId, { id: conversationId, lastUsed: now });
+        conversations.set(conversationKey, { id: conversationId, lastUsed: now });
     } else {
-        conversations.set(userId, { id: conversationId, lastUsed: now });
+        conversations.set(conversationKey, { id: conversationId, lastUsed: now });
     }
 
     const response = await openaiClient.responses.create({
         conversation: conversationId,
-        input: safeContent,
+        input,
         agent_reference: {
             name: process.env.FOUNDRY_AGENT_NAME,
             type: 'agent_reference'
         }
     }, {
         headers: {
-            'x-memory-user-id': userId
+            'x-memory-user-id': conversationKey
         }
     });
 
