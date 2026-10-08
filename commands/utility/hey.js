@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { chat } = require('../../services/foundry');
 const { buildAiContext } = require('../../services/aiContext');
+const { parseAiReply } = require('../../services/aiReply');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -37,9 +38,7 @@ module.exports = {
                 })
             );
 
-            await interaction.editReply(
-                resposta || 'Não consegui pensar em uma resposta.'
-            );
+            await interaction.editReply(parseAiReply(resposta));
         } catch (error) {
             console.error('Erro ao conversar com o Snuf:', error);
 

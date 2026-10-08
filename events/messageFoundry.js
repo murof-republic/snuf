@@ -1,6 +1,7 @@
 const { Events } = require('discord.js');
 const foundry = require('../services/foundry');
 const { buildAiContext } = require('../services/aiContext');
+const { parseAiReply } = require('../services/aiReply');
 
 const AI_RATE_LIMIT_MS = 8_000;
 const AI_MAX_CHARS = 500;
@@ -64,7 +65,7 @@ module.exports = {
                 })
             );
 
-            await message.reply(response);
+            await message.reply(parseAiReply(response));
         } catch (error) {
             console.error(error);
         }

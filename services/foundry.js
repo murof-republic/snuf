@@ -45,32 +45,12 @@ function getOpenAIClient() {
     return openai;
 }
 
-const conversations = new Map();
-const userMemories = new Map();
-const guildMemories = new Map();
-const CONVERSATION_TTL_MS = 30 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 500;
-const MAX_MEMORY_ITEMS = 8;
 
 function buildMemoryScope(guildId, userId) {
     return `${guildId}/${userId}`
         .replace(/[^a-zA-Z0-9_.%+@/-]/g, '')
         .slice(0, 256);
-}
-
-function remember(memoryStore, key, item) {
-    const memory = memoryStore.get(key) || [];
-    memory.push(item);
-    memoryStore.set(key, memory.slice(-MAX_MEMORY_ITEMS));
-}
-
-function pruneExpiredConversations(now = Date.now()) {
-    for (const [userId, metadata] of conversations.entries()) {
-        if (now - metadata.lastUsed > CONVERSATION_TTL_MS) {
-            conversations.delete(userId);
-            userMemories.delete(userId);
-        }
-    }
 }
 
 async function chat(userId, message, context = {}) {
@@ -82,42 +62,20 @@ async function chat(userId, message, context = {}) {
     }
 
     const safeContent = content.slice(0, MAX_MESSAGE_LENGTH);
-    const now = Date.now();
-
-    pruneExpiredConversations(now);
-
-    const guildId = context.servidor?.id || 'sem-servidor';
-    const conversationKey = buildMemoryScope(guildId, userId);
-
-    remember(userMemories, conversationKey, `Usuário disse: ${safeContent}`);
-    remember(
-        guildMemories,
-        guildId,
-        `${context.pessoa?.nome || userId} interagiu em ${context.localizacao?.canal || 'um canal'}`
+    const memoryScope = buildMemoryScope(
+        context.servidor?.id || 'sem-servidor',
+        userId
     );
 
     const input = JSON.stringify({
         mensagemAtual: safeContent,
-        contextoAtual: context,
-        memoria: {
-            usuario: userMemories.get(conversationKey) || [],
-            servidor: guildMemories.get(guildId) || []
-        }
+        contextoAtual: context
     });
 
-    let conversationId = conversations.get(conversationKey)?.id;
-
-    if (!conversationId) {
-        const conversation = await openaiClient.conversations.create();
-
-        conversationId = conversation.id;
-        conversations.set(conversationKey, { id: conversationId, lastUsed: now });
-    } else {
-        conversations.set(conversationKey, { id: conversationId, lastUsed: now });
-    }
+    const conversation = await openaiClient.conversations.create();
 
     const response = await openaiClient.responses.create({
-        conversation: conversationId,
+        conversation: conversation.id,
         input,
         agent_reference: {
             name: process.env.FOUNDRY_AGENT_NAME,
@@ -125,7 +83,7 @@ async function chat(userId, message, context = {}) {
         }
     }, {
         headers: {
-            'x-memory-user-id': conversationKey
+            'x-memory-user-id': memoryScope
         }
     });
 
