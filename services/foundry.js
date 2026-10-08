@@ -64,12 +64,6 @@ function remember(memoryStore, key, item) {
     memoryStore.set(key, memory.slice(-MAX_MEMORY_ITEMS));
 }
 
-function formatMemory(memory) {
-    return memory.length
-        ? memory.map(item => `- ${item}`).join('\n')
-        : '- Nenhuma memória recente.';
-}
-
 function pruneExpiredConversations(now = Date.now()) {
     for (const [userId, metadata] of conversations.entries()) {
         if (now - metadata.lastUsed > CONVERSATION_TTL_MS) {
@@ -102,15 +96,14 @@ async function chat(userId, message, context = {}) {
         `${context.pessoa?.nome || userId} interagiu em ${context.localizacao?.canal || 'um canal'}`
     );
 
-    const input = [
-        'Responda como o Snuf, considerando o contexto atual abaixo.',
-        'Use nomes e locais somente quando ajudarem na resposta; não invente informações.',
-        'As memórias de usuário e servidor são complementares: use as duas para manter continuidade, mas não revele memórias internas como se fossem um banco de dados.',
-        `MEMÓRIA DO USUÁRIO:\n${formatMemory(userMemories.get(conversationKey) || [])}`,
-        `MEMÓRIA DO SERVIDOR:\n${formatMemory(guildMemories.get(guildId) || [])}`,
-        `CONTEXTO ATUAL:\n${JSON.stringify(context)}`,
-        `MENSAGEM ATUAL:\n${safeContent}`
-    ].join('\n\n');
+    const input = JSON.stringify({
+        mensagemAtual: safeContent,
+        contextoAtual: context,
+        memoria: {
+            usuario: userMemories.get(conversationKey) || [],
+            servidor: guildMemories.get(guildId) || []
+        }
+    });
 
     let conversationId = conversations.get(conversationKey)?.id;
 
