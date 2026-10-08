@@ -1,5 +1,6 @@
 const { AIProjectClient } = require('@azure/ai-projects');
 const { ClientSecretCredential } = require('@azure/identity');
+const { db } = require('./firebase');
 
 const requiredEnv = [
     'AZURE_TENANT_ID',
@@ -52,6 +53,22 @@ function buildMemoryScope(guildId, userId) {
     return `${guildId}/${userId}`
         .replace(/[^a-zA-Z0-9_.%+@/-]/g, '')
         .slice(0, 256);
+}
+
+function conversationDocument(scope) {
+    return db.collection('foundryConversations').doc(scope.replaceAll('/', '_'));
+}
+
+async function loadConversationId(scope) {
+    const snapshot = await conversationDocument(scope).get();
+    return snapshot.exists ? snapshot.data()?.conversationId : null;
+}
+
+async function saveConversationId(scope, conversationId) {
+    await conversationDocument(scope).set({
+        conversationId,
+        updatedAt: new Date()
+    }, { merge: true });
 }
 
 function findContainerFileCitations(value, citations = []) {
@@ -111,10 +128,16 @@ async function chat(userId, message, context = {}) {
         contextoAtual: context
     });
 
-    const conversation = await openaiClient.conversations.create();
+    let conversationId = await loadConversationId(memoryScope);
+
+    if (!conversationId) {
+        const conversation = await openaiClient.conversations.create();
+        conversationId = conversation.id;
+        await saveConversationId(memoryScope, conversationId);
+    }
 
     const response = await openaiClient.responses.create({
-        conversation: conversation.id,
+        conversation: conversationId,
         input,
         agent_reference: {
             name: process.env.FOUNDRY_AGENT_NAME,
