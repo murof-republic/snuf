@@ -38,7 +38,7 @@ module.exports = {
                 })
             );
 
-            await interaction.editReply(parseAiReply(resposta));
+            await interaction.editReply(parseAiReply(resposta.text, resposta.files));
         } catch (error) {
             console.error('Erro ao conversar com o Snuf:', error);
 

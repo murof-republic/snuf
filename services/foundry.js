@@ -46,11 +46,50 @@ function getOpenAIClient() {
 }
 
 const MAX_MESSAGE_LENGTH = 500;
+const MAX_FILE_BYTES = 8 * 1024 * 1024;
 
 function buildMemoryScope(guildId, userId) {
     return `${guildId}/${userId}`
         .replace(/[^a-zA-Z0-9_.%+@/-]/g, '')
         .slice(0, 256);
+}
+
+function findContainerFileCitations(value, citations = []) {
+    if (!value || typeof value !== 'object') return citations;
+
+    if (value.type === 'container_file_citation') {
+        citations.push(value);
+    }
+
+    for (const child of Object.values(value)) {
+        findContainerFileCitations(child, citations);
+    }
+
+    return citations;
+}
+
+async function downloadGeneratedFiles(openaiClient, response) {
+    if (!openaiClient.containers?.files?.content) return [];
+
+    const citations = findContainerFileCitations(response.output);
+    const files = [];
+
+    for (const citation of citations.slice(0, 3)) {
+        const contentResponse = await openaiClient.containers.files.content.retrieve(
+            citation.file_id,
+            { container_id: citation.container_id }
+        );
+        const buffer = Buffer.from(await contentResponse.arrayBuffer());
+
+        if (buffer.length <= MAX_FILE_BYTES) {
+            files.push({
+                attachment: buffer,
+                name: citation.filename
+            });
+        }
+    }
+
+    return files;
 }
 
 async function chat(userId, message, context = {}) {
@@ -87,7 +126,10 @@ async function chat(userId, message, context = {}) {
         }
     });
 
-    return response.output_text;
+    return {
+        text: response.output_text,
+        files: await downloadGeneratedFiles(openaiClient, response)
+    };
 }
 
 module.exports = {

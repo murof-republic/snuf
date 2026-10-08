@@ -65,7 +65,7 @@ module.exports = {
                 })
             );
 
-            await message.reply(parseAiReply(response));
+            await message.reply(parseAiReply(response.text, response.files));
         } catch (error) {
             console.error(error);
         }

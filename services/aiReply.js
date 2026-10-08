@@ -9,11 +9,13 @@ function safeFileName(name) {
     return fileName || 'arquivo.txt';
 }
 
-function parseAiReply(output) {
-    const text = String(output || '').trim();
+function parseAiReply(output, generatedFiles = []) {
+    const text = String(output || '')
+        .replace(/\[[^\]]*\]\(sandbox:[^)]+\)/g, '')
+        .trim();
 
     if (!text) {
-        return { content: 'Não consegui pensar em uma resposta.', files: [] };
+        return { content: 'Arquivo gerado.', files: generatedFiles };
     }
 
     try {
@@ -27,7 +29,7 @@ function parseAiReply(output) {
         ) {
             return {
                 content: String(payload.mensagem || payload.resposta || 'Arquivo gerado.').trim(),
-                files: [{
+                files: [...generatedFiles, {
                     attachment: Buffer.from(fileContent, 'utf8'),
                     name: safeFileName(file.nome)
                 }]
@@ -37,7 +39,7 @@ function parseAiReply(output) {
         // Respostas normais do agente não precisam ser JSON.
     }
 
-    return { content: text, files: [] };
+    return { content: text, files: generatedFiles };
 }
 
 module.exports = {
