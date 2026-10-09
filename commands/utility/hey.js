@@ -38,7 +38,13 @@ module.exports = {
                 })
             );
 
-            await interaction.editReply(parseAiReply(resposta.text, resposta.files));
+            const parsedReply = parseAiReply(resposta.text, resposta.files);
+            const sentMessage = await interaction.editReply(parsedReply);
+
+            await require('../../services/foundry').saveBotMessageContext(sentMessage.id, {
+                autorId: interaction.user.id,
+                texto: parsedReply.content
+            });
         } catch (error) {
             console.error('Erro ao conversar com o Snuf:', error);
 

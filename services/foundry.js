@@ -59,6 +59,22 @@ function conversationDocument(scope) {
     return db.collection('foundryConversations').doc(scope.replaceAll('/', '_'));
 }
 
+function botMessageDocument(messageId) {
+    return db.collection('foundryBotMessages').doc(messageId);
+}
+
+async function saveBotMessageContext(messageId, context) {
+    await botMessageDocument(messageId).set({
+        ...context,
+        createdAt: new Date()
+    });
+}
+
+async function loadBotMessageContext(messageId) {
+    const snapshot = await botMessageDocument(messageId).get();
+    return snapshot.exists ? snapshot.data() : null;
+}
+
 async function loadConversationId(scope) {
     const snapshot = await conversationDocument(scope).get();
     return snapshot.exists ? snapshot.data()?.conversationId : null;
@@ -113,7 +129,7 @@ async function chat(userId, message, context = {}) {
     const openaiClient = getOpenAIClient();
     const content = String(message || '').trim();
 
-    if (!content) {
+    if (!content && !context.anexos?.length && !context.mensagemRespondida) {
         throw new Error('Mensagem vazia para o Foundry.');
     }
 
@@ -156,5 +172,7 @@ async function chat(userId, message, context = {}) {
 }
 
 module.exports = {
-    chat
+    chat,
+    saveBotMessageContext,
+    loadBotMessageContext
 };
