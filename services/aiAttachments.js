@@ -15,7 +15,8 @@ async function collectTextAttachments(attachments) {
         const base = {
             nome: attachment.name,
             tipo: attachment.contentType || 'application/octet-stream',
-            tamanho: attachment.size
+            tamanho: attachment.size,
+            url: attachment.url
         };
 
         if (!isTextAttachment(attachment) || attachment.size > MAX_ATTACHMENT_BYTES) {

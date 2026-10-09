@@ -55,6 +55,36 @@ function buildMemoryScope(guildId, userId) {
         .slice(0, 256);
 }
 
+function getContextAttachments(context) {
+    return [
+        ...(context.anexos || []),
+        ...(context.mensagemRespondida?.anexos || [])
+    ].filter(attachment => attachment.url);
+}
+
+function buildResponseInput(safeContent, context) {
+    const payload = JSON.stringify({
+        mensagemAtual: safeContent,
+        contextoAtual: context
+    });
+    const images = getContextAttachments(context)
+        .filter(attachment => attachment.tipo?.startsWith('image/'))
+        .slice(0, 3);
+
+    if (!images.length) return payload;
+
+    return [{
+        role: 'user',
+        content: [
+            { type: 'input_text', text: payload },
+            ...images.map(image => ({
+                type: 'input_image',
+                image_url: image.url
+            }))
+        ]
+    }];
+}
+
 function conversationDocument(scope) {
     return db.collection('foundryConversations').doc(scope.replaceAll('/', '_'));
 }
@@ -139,10 +169,7 @@ async function chat(userId, message, context = {}) {
         userId
     );
 
-    const input = JSON.stringify({
-        mensagemAtual: safeContent,
-        contextoAtual: context
-    });
+    const input = buildResponseInput(safeContent, context);
 
     let conversationId = await loadConversationId(memoryScope);
 

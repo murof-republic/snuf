@@ -36,7 +36,13 @@ module.exports = {
                 replyContext = await foundry.loadBotMessageContext(repliedMessage.id);
                 replyContext ||= {
                     mensagemId: repliedMessage.id,
-                    texto: repliedMessage.content
+                    texto: repliedMessage.content,
+                    anexos: [...repliedMessage.attachments.values()].map(attachment => ({
+                        nome: attachment.name,
+                        tipo: attachment.contentType,
+                        tamanho: attachment.size,
+                        url: attachment.url
+                    }))
                 };
             }
         }
@@ -84,7 +90,13 @@ module.exports = {
 
             await foundry.saveBotMessageContext(sentMessage.id, {
                 autorId: message.author.id,
-                texto: parsedReply.content
+                texto: parsedReply.content,
+                anexos: [...sentMessage.attachments.values()].map(attachment => ({
+                    nome: attachment.name,
+                    tipo: attachment.contentType,
+                    tamanho: attachment.size,
+                    url: attachment.url
+                }))
             });
         } catch (error) {
             console.error(error);

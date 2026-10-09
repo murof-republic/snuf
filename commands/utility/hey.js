@@ -43,7 +43,13 @@ module.exports = {
 
             await require('../../services/foundry').saveBotMessageContext(sentMessage.id, {
                 autorId: interaction.user.id,
-                texto: parsedReply.content
+                texto: parsedReply.content,
+                anexos: [...sentMessage.attachments.values()].map(attachment => ({
+                    nome: attachment.name,
+                    tipo: attachment.contentType,
+                    tamanho: attachment.size,
+                    url: attachment.url
+                }))
             });
         } catch (error) {
             console.error('Erro ao conversar com o Snuf:', error);
