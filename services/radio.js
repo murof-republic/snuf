@@ -11,6 +11,7 @@ const {
 
 const DEFAULT_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DEFAULT_CHANNEL_ID = process.env.RADIO_CHANNEL_ID;
+const RADIO_IDLE_TIMEOUT = 5 * 60 * 1000;
 
 const radios = [
 	{ name: 'R2 Chill', aliases: ['r2 chill', 'chill'], url: 'https://icecast.err.ee/r2chill.opus' },
@@ -40,9 +41,11 @@ function getOrCreateState(guildId) {
 			player: null,
 			stream: null,
 			started: false,
+			starting: false,
 			changing: false,
 			currentRadio: null,
-			currentChannel: null
+			currentChannel: null,
+			stopTimer: null
 		});
 	}
 
@@ -193,9 +196,16 @@ async function startRadio(client, guildId = DEFAULT_GUILD_ID, channelId = DEFAUL
 		return false;
 	}
 
-	if (state.started) {
+	if (state.stopTimer) {
+		clearTimeout(state.stopTimer);
+		state.stopTimer = null;
+	}
+
+	if (state.started || state.starting) {
 		return true;
 	}
+
+	state.starting = true;
 
 	try {
 		const guild = await client.guilds.fetch(guildId).catch(() => null);
@@ -243,7 +253,71 @@ async function startRadio(client, guildId = DEFAULT_GUILD_ID, channelId = DEFAUL
 	} catch {
 		stopRadio(guildId);
 		return false;
+	} finally {
+		state.starting = false;
 	}
+}
+
+function hasHumanMembers(channel) {
+	return !!channel?.members?.some(member => !member.user?.bot);
+}
+
+function scheduleRadioStop(guildId) {
+	const state = getOrCreateState(guildId);
+
+	if (!state || !state.started || state.stopTimer) {
+		return;
+	}
+
+	state.stopTimer = setTimeout(() => {
+		state.stopTimer = null;
+		stopRadio(guildId);
+	}, RADIO_IDLE_TIMEOUT);
+}
+
+async function handleVoiceStateUpdate(client, oldState, newState) {
+	const guildId = newState?.guild?.id || oldState?.guild?.id;
+	const channelId = DEFAULT_CHANNEL_ID;
+
+	if (!client || !guildId || guildId !== DEFAULT_GUILD_ID || !channelId) {
+		return;
+	}
+
+	const member = newState?.member || oldState?.member;
+	if (member?.user?.bot) {
+		return;
+	}
+
+	const enteredRadioChannel = newState?.channelId === channelId;
+	const leftRadioChannel = oldState?.channelId === channelId;
+
+	if (!enteredRadioChannel && !leftRadioChannel) {
+		return;
+	}
+
+	const channel = newState?.guild?.channels?.cache?.get(channelId)
+		|| oldState?.guild?.channels?.cache?.get(channelId);
+
+	if (!channel) {
+		return;
+	}
+
+	if (hasHumanMembers(channel)) {
+		if (stateHasStopTimer(guildId)) {
+			const state = getOrCreateState(guildId);
+			clearTimeout(state.stopTimer);
+			state.stopTimer = null;
+		}
+
+		await startRadio(client, guildId, channelId);
+		return;
+	}
+
+	scheduleRadioStop(guildId);
+}
+
+function stateHasStopTimer(guildId) {
+	return !!getOrCreateState(guildId)?.stopTimer;
 }
 
 async function setRadio(radioName, guildId = DEFAULT_GUILD_ID, userChannelId = null) {
@@ -332,7 +406,13 @@ function stopRadio(guildId = DEFAULT_GUILD_ID) {
 		return false;
 	}
 
+	if (state.stopTimer) {
+		clearTimeout(state.stopTimer);
+		state.stopTimer = null;
+	}
+
 	state.started = false;
+	state.starting = false;
 	state.changing = false;
 	stopStream(state);
 
@@ -354,6 +434,7 @@ function stopRadio(guildId = DEFAULT_GUILD_ID) {
 
 module.exports = {
 	startRadio,
+	handleVoiceStateUpdate,
 	skipSong,
 	setRadio,
 	getCurrentChannelId,

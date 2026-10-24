@@ -5,7 +5,6 @@ const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits} = require('discord.js');
 const foundry = require('./services/foundry');
 const database = require('./services/firebase');
-const radio = require('./services/radio');
 
 const client = new Client({
 	intents: [
@@ -62,8 +61,4 @@ for (const file of eventFiles) {
 
 database.connect().then(() => {
 	client.login(process.env.DISCORD_TOKEN);
-});
-
-client.once(Events.ClientReady, () => {
-	radio.startRadio(client);
 });
