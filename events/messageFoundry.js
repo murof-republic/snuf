@@ -50,7 +50,6 @@ module.exports = {
         if (!match && !mentioned && !reply) return;
 
         const content = message.content
-            .replace(/\bsnuf\b/gi, '')
             .replace(`<@${message.client.user.id}>`, '')
             .replace(`<@!${message.client.user.id}>`, '')
             .trim();
