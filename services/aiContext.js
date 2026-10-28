@@ -1,3 +1,5 @@
+const { isAiFeatureEnabled } = require('./aiFeatures');
+
 const MAX_MEMBERS = 60;
 const MAX_CHANNELS = 40;
 
@@ -6,6 +8,8 @@ function clean(value, maxLength = 120) {
 }
 
 function buildAiContext({ guild, channel, member, client, attachments = [], replyContext = null }) {
+	const safeAttachments = isAiFeatureEnabled('readAttachments') ? attachments : [];
+
 	const members = [...guild.members.cache.values()]
 		.filter(currentMember => !currentMember.user.bot)
 		.sort((first, second) =>
@@ -68,7 +72,7 @@ function buildAiContext({ guild, channel, member, client, attachments = [], repl
 		},
 		membros: members,
 		canaisVisiveis: channels,
-		anexos: attachments,
+		anexos: safeAttachments,
 		mensagemRespondida: replyContext,
 		horario: new Date().toISOString()
 	};

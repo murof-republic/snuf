@@ -1,6 +1,7 @@
 const { AIProjectClient } = require('@azure/ai-projects');
 const { ClientSecretCredential } = require('@azure/identity');
 const { db } = require('./firebase');
+const { isAiFeatureEnabled } = require('./aiFeatures');
 
 const requiredEnv = [
     'AZURE_TENANT_ID',
@@ -56,6 +57,10 @@ function buildMemoryScope(guildId, userId) {
 }
 
 function getContextAttachments(context) {
+    if (!isAiFeatureEnabled('readAttachments')) {
+        return [];
+    }
+
     return [
         ...(context.anexos || []),
         ...(context.mensagemRespondida?.anexos || [])
@@ -132,6 +137,10 @@ function findContainerFileCitations(value, citations = []) {
 }
 
 async function downloadGeneratedFiles(openaiClient, response) {
+    if (!isAiFeatureEnabled('generateFiles')) {
+        return [];
+    }
+
     if (!openaiClient.containers?.files?.content) return [];
 
     const citations = findContainerFileCitations(response.output);
@@ -156,6 +165,10 @@ async function downloadGeneratedFiles(openaiClient, response) {
 }
 
 async function chat(userId, message, context = {}) {
+    if (!isAiFeatureEnabled('conversational')) {
+        throw new Error('Modelo conversacional desativado.');
+    }
+
     const openaiClient = getOpenAIClient();
     const content = String(message || '').trim();
 

@@ -1,3 +1,5 @@
+const { isAiFeatureEnabled } = require('./aiFeatures');
+
 const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
 const TEXT_EXTENSIONS = new Set([
     'txt', 'md', 'json', 'csv', 'js', 'ts', 'jsx', 'tsx', 'py', 'html', 'css', 'xml', 'yml', 'yaml'
@@ -9,6 +11,10 @@ function isTextAttachment(attachment) {
 }
 
 async function collectTextAttachments(attachments) {
+    if (!isAiFeatureEnabled('readAttachments')) {
+        return [];
+    }
+
     const collected = [];
 
     for (const attachment of attachments.values()) {

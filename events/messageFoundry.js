@@ -3,6 +3,7 @@ const foundry = require('../services/foundry');
 const { buildAiContext } = require('../services/aiContext');
 const { parseAiReply } = require('../services/aiReply');
 const { collectTextAttachments } = require('../services/aiAttachments');
+const { isAiFeatureEnabled } = require('../services/aiFeatures');
 
 const AI_RATE_LIMIT_MS = 8_000;
 const AI_MAX_CHARS = 500;
@@ -69,7 +70,9 @@ module.exports = {
         try {
             await message.channel.sendTyping();
 
-            const attachments = await collectTextAttachments(message.attachments);
+            const attachments = isAiFeatureEnabled('readAttachments')
+                ? await collectTextAttachments(message.attachments)
+                : [];
 
             const response = await foundry.chat(
                 message.author.id,
